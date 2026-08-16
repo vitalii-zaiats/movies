@@ -1,0 +1,22 @@
+[project]
+name = "ashdi-finder"
+version = "0.1.0"
+description = "Find ashdi.vip player iframes on a page"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpkit",
+    "httpx>=0.28",
+    "beautifulsoup4>=4.13",
+    "lxml>=5.3",
+]
+
+[project.scripts]
+ashdi-finder = "ashdi_finder.cli:main"
+
+[tool.uv.sources]
+httpkit = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

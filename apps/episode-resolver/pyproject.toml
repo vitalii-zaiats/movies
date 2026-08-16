@@ -1,0 +1,21 @@
+[project]
+name = "episode-resolver"
+version = "0.1.0"
+description = "Takes crawled episodes and resolves each one's ashdi streams"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ashdi-finder",
+    "crawlers",
+]
+
+[project.scripts]
+resolve-episodes = "episode_resolver.__main__:main"
+
+[tool.uv.sources]
+ashdi-finder = { workspace = true }
+crawlers = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

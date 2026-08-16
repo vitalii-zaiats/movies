@@ -1,0 +1,27 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Catalogue API — titles, posters, playlists and links to our VOD"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14",
+    "asyncpg>=0.30",
+    "contracts",
+    "fastapi>=0.115",
+    "grpcio>=1.68",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0",
+    "uvicorn>=0.32",
+]
+
+[project.scripts]
+api = "api.__main__:main"
+api-seed = "api.seed:main"
+
+[tool.uv.sources]
+contracts = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

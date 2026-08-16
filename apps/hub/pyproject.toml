@@ -1,0 +1,17 @@
+[project]
+name = "hub"
+version = "0.1.0"
+description = "WebSocket pairing hub — display and remote talk over a Redis bus"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.10",
+    "redis>=5.0",
+]
+
+[project.scripts]
+hub = "hub.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package vod.v1;
+
+// The VOD service owns playable things. The only field that must exist is the
+// playlist URL — an index.m3u8. Title, poster and the rest are metadata the API
+// fills in when it has it, and null until then.
+service VodService {
+  rpc CreateVod(CreateVodRequest) returns (CreateVodResponse);
+  rpc GetVod(GetVodRequest) returns (Vod);
+  rpc ListVods(ListVodsRequest) returns (ListVodsResponse);
+}
+
+message Metadata {
+  optional string title = 1;
+  optional string poster = 2;
+}
+
+message Vod {
+  uint64 id = 1;
+  // Where the stream really lives, upstream.
+  string playlist_url = 2;
+  // Where we serve it: http://vod.localhost/1
+  string url = 3;
+  Metadata metadata = 4;
+  string created_at = 5;
+}
+
+message CreateVodRequest {
+  string playlist_url = 1;
+  Metadata metadata = 2;
+}
+
+message CreateVodResponse {
+  Vod vod = 1;
+  // False when this playlist was already registered — create is idempotent, so
+  // re-running a seed doesn't duplicate anything.
+  bool created = 2;
+}
+
+message GetVodRequest {
+  uint64 id = 1;
+}
+
+message ListVodsRequest {
+  uint32 limit = 1;
+  uint64 after_id = 2;
+}
+
+message ListVodsResponse {
+  repeated Vod vods = 1;
+}

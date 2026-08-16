@@ -1,0 +1,17 @@
+[project]
+name = "proxy"
+version = "0.1.0"
+description = "Async streaming proxy for HLS playlists and segments"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.10",
+    "certifi",
+]
+
+[project.scripts]
+proxy = "proxy.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

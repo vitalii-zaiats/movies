@@ -1,0 +1,14 @@
+[project]
+name = "vod-packager"
+version = "0.1.0"
+description = "Cut a video into HLS .ts segments on disk"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+vod-pack = "vod_packager.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

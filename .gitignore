@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+node_modules/
+dev-dist/
+*.egg-info/
+.DS_Store
+
+# crawler and resolver output
+data/
+*.db
+*.sqlite3
