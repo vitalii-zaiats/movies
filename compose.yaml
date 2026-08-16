@@ -1,3 +1,18 @@
+# The whole stack behind one nginx on :80.
+#
+# Everything the browser touches — the app, /api, /ws and /vod — is one origin,
+# which means no CORS to reason about and, more to the point, a single tunnel:
+# `ngrok http 80` and the phone on the other side gets all of it.
+#
+#   docker compose up -d --build
+#   docker compose run --rm seed data/family-guy-streams.jsonl
+#
+# Only nginx and the two databases publish ports; the services talk over the
+# compose network by name.
+
+# No `name:` on purpose — the project keeps the directory's name, so the
+# postgres volume that already holds the catalogue stays the same one.
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -28,5 +43,99 @@ services:
       timeout: 3s
       retries: 5
 
+  # Runs to completion before the API starts, and stays out of the way after.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
+    entrypoint: ["alembic"]
+    command: ["upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
+      API_VOD_GRPC_TARGET: vod:50051
+      # A path, not a host: the browser reaches the VOD service through nginx.
+      API_VOD_BASE: /vod
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      vod:
+        condition: service_started
+    restart: unless-stopped
+
+  vod:
+    build:
+      context: .
+      dockerfile: apps/vod/Dockerfile
+    environment:
+      VOD_DB: /data/vod.db
+      VOD_PUBLIC_URL: /vod
+      VOD_PROXY_URL: http://proxy:8001
+    volumes:
+      - voddata:/data
+    depends_on:
+      - proxy
+    restart: unless-stopped
+
+  # Never published: only the VOD service talks to it, from inside the network.
+  proxy:
+    build:
+      context: .
+      dockerfile: apps/proxy/Dockerfile
+    restart: unless-stopped
+
+  hub:
+    build:
+      context: .
+      dockerfile: apps/hub/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "80:8080"
+    depends_on:
+      - api
+      - hub
+      - vod
+    restart: unless-stopped
+
+  # One-shot: fills the catalogue and registers playlists with the VOD service.
+  #   docker compose run --rm seed data/family-guy-streams.jsonl
+  seed:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
+      API_VOD_GRPC_TARGET: vod:50051
+    entrypoint: ["api-seed"]
+    volumes:
+      - ./data:/app/data:ro
+    profiles: ["tools"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      vod:
+        condition: service_started
+
 volumes:
   pgdata:
+  voddata:

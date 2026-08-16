@@ -37,12 +37,16 @@ class Relay:
     def _through(self, url: str) -> str:
         return f"{self._proxy}/?url={quote(url, safe='')}"
 
-    async def playlist(self, vod_id: int, upstream: str) -> tuple[int, str, str]:
-        """Return `(status, body, content_type)` with links pointing back at us."""
+    async def playlist(self, upstream: str) -> tuple[int, str, str]:
+        """Return `(status, body, content_type)` with links pointing back at us.
+
+        The links come out *relative* — `media?u=…`, resolved by the player
+        against the playlist it just fetched. That way the service works the
+        same whether it's mounted at the root or behind `/vod/`, with nothing to
+        configure: a playlist at `/vod/1/index.m3u8` yields `/vod/1/media?u=…`.
+        """
         response = await self._client.get(self._through(upstream))
-        body = PROXY_LINK_RE.sub(
-            lambda match: f"/{vod_id}/media?u={match.group(1)}", response.text
-        )
+        body = PROXY_LINK_RE.sub(lambda match: f"media?u={match.group(1)}", response.text)
         content_type = response.headers.get("content-type", "application/vnd.apple.mpegurl")
         return response.status_code, body, content_type
 

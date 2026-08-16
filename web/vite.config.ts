@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // WebSocket needs no CORS or absolute URL.
 const HUB = 'http://127.0.0.1:8010'
 const API = 'http://127.0.0.1:8020'
+const VOD = 'http://127.0.0.1:8030'
 
 export default defineConfig({
   plugins: [
@@ -50,6 +51,12 @@ export default defineConfig({
         target: API,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      // Same prefix as the deployed nginx, so playlist URLs behave identically.
+      '/vod': {
+        target: VOD,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/vod/, ''),
       },
     },
   },

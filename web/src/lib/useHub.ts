@@ -33,9 +33,10 @@ export function useHub(options: HubOptions) {
   let closedByUs = false
 
   function url(): string {
-    const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
     const params = new URLSearchParams({ role: options.role })
     if (code.value) params.set('code', code.value)
+    // Same origin as the page, so an https tunnel upgrades this to wss for free.
+    const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
     return `${scheme}://${location.host}/ws?${params}`
   }
 

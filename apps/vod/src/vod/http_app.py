@@ -54,7 +54,7 @@ def create_app(store: VodStore, public_url: str, proxy_url: str) -> FastAPI:
     @app.get("/{vod_id}/index.m3u8")
     async def playlist(vod_id: int) -> Response:
         vod = await _get(vod_id)
-        status, body, content_type = await _fetch_playlist(vod_id, vod.playlist_url)
+        status, body, content_type = await _fetch_playlist(vod.playlist_url)
         return Response(
             content=body, status_code=status, media_type=content_type, headers=PLAYLIST_HEADERS
         )
@@ -68,7 +68,7 @@ def create_app(store: VodStore, public_url: str, proxy_url: str) -> FastAPI:
             raise HTTPException(status_code=400, detail="u must be an absolute http(s) URL")
 
         if is_playlist(u):
-            status, body, content_type = await _fetch_playlist(vod_id, u)
+            status, body, content_type = await _fetch_playlist(u)
             return Response(
                 content=body,
                 status_code=status,
@@ -92,9 +92,9 @@ def create_app(store: VodStore, public_url: str, proxy_url: str) -> FastAPI:
             body(), status_code=upstream.status_code, headers=Relay.headers_from(upstream)
         )
 
-    async def _fetch_playlist(vod_id: int, url: str) -> tuple[int, str, str]:
+    async def _fetch_playlist(url: str) -> tuple[int, str, str]:
         try:
-            return await relay.playlist(vod_id, url)
+            return await relay.playlist(url)
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail=f"upstream failed: {exc}") from exc
 

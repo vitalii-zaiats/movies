@@ -1,4 +1,5 @@
-// Client for apps/api. Vite proxies /api → :8020, so this stays same-origin.
+// Client for apps/api. Same origin everywhere: Vite proxies /api in dev, nginx
+// proxies it in the image. One origin means one ngrok tunnel and no CORS.
 
 const BASE = '/api'
 

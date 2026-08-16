@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from api.models import Episode, Playlist, Show
+from api.settings import settings
 
 
 class ShowOut(BaseModel):
@@ -28,7 +29,17 @@ class EpisodeOut(BaseModel):
     poster: str | None
     source_url: str
     vod_id: int | None
-    vod_url: str | None
+
+    @computed_field
+    @property
+    def vod_url(self) -> str | None:
+        """Composed from the id rather than read from the row.
+
+        The URL a browser should use depends on how the stack is exposed today,
+        which is not something worth freezing into the database at seed time.
+        """
+        base = settings.vod_base.rstrip("/")
+        return f"{base}/{self.vod_id}" if self.vod_id else None
 
     @computed_field
     @property
