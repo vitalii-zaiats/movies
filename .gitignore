@@ -10,6 +10,9 @@ dev-dist/
 *.egg-info/
 .DS_Store
 
+# secrets — compose reads this automatically
+.env
+
 # crawler and resolver output
 data/
 *.db

@@ -136,6 +136,34 @@ services:
       vod:
         condition: service_started
 
+  # Public HTTPS tunnel to nginx, for handing the phone a real URL.
+  #
+  #   docker compose --profile tunnel up -d tunnel
+  #   docker compose logs -f tunnel     # the address it hands you
+  #
+  # Behind a profile on purpose: this puts the whole stack on the open internet,
+  # which shouldn't happen as a side effect of a plain `docker compose up`.
+  #
+  # `-R0:web:8080` and not `localhost:80` — inside the network, localhost is
+  # this container, and nginx listens on 8080 without the host port mapping.
+  tunnel:
+    image: pinggy/pinggy
+    command:
+      - "-p"
+      - "443"
+      - "-R0:web:8080"
+      - "-o"
+      - "StrictHostKeyChecking=no"
+      - "-o"
+      - "ServerAliveInterval=30"
+      - "${PINGGY_TOKEN:?set PINGGY_TOKEN in .env}@pro.pinggy.io"
+    stdin_open: true
+    tty: true
+    profiles: ["tunnel"]
+    depends_on:
+      - web
+    restart: unless-stopped
+
 volumes:
   pgdata:
   voddata:
