@@ -4,12 +4,16 @@ version = "0.1.0"
 description = "Pluggable listing-page crawlers: sources in, sinks out"
 readme = "README.md"
 requires-python = ">=3.12"
+# Parsing only. No HTTP library: the requester is injected, so nothing here
+# forces httpx on a caller who would rather drive sockets themselves.
 dependencies = [
-    "httpkit",
-    "httpx>=0.28",
     "beautifulsoup4>=4.13",
     "lxml>=5.3",
 ]
+
+[project.optional-dependencies]
+# Only the CLI needs a working requester out of the box.
+cli = ["httpkit"]
 
 [project.scripts]
 crawl = "crawlers.cli:main"

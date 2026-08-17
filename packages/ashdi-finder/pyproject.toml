@@ -4,12 +4,16 @@ version = "0.1.0"
 description = "Find ashdi.vip player iframes on a page"
 readme = "README.md"
 requires-python = ">=3.12"
+# Parsing only. No HTTP library: the requester is injected, so httpx is never
+# forced on anyone who wants to drive sockets themselves.
 dependencies = [
-    "httpkit",
-    "httpx>=0.28",
     "beautifulsoup4>=4.13",
     "lxml>=5.3",
 ]
+
+[project.optional-dependencies]
+# Only the CLI needs a working requester out of the box.
+cli = ["httpkit"]
 
 [project.scripts]
 ashdi-finder = "ashdi_finder.cli:main"

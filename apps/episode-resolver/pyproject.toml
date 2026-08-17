@@ -7,6 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "ashdi-finder",
     "crawlers",
+    # The requester is this app's choice to make; the libraries take whatever
+    # it hands them.
+    "httpkit",
 ]
 
 [project.scripts]
@@ -15,6 +18,7 @@ resolve-episodes = "episode_resolver.__main__:main"
 [tool.uv.sources]
 ashdi-finder = { workspace = true }
 crawlers = { workspace = true }
+httpkit = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

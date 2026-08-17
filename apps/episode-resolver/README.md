@@ -4,8 +4,14 @@ Crawls a show's episode list with [`crawlers`](../../packages/crawlers), then
 opens every episode page with [`ashdi-finder`](../../packages/ashdi-finder) and
 stores the `.m3u8` streams it plays.
 
-The two packages don't know about each other — this app is the only thing that
-imports both. Adding a source or a stream host stays a change in one package.
+The two packages don't know about each other, and neither knows what a proxy is:
+this app builds one requester — `httpkit.build_async_fetcher()` with the proxy
+pool — and hands the same one to both. Adding a source or a stream host stays a
+change in one package; changing how requests are made is a change only here.
+
+Work runs on asyncio with a semaphore rather than a thread pool. Tasks start
+immediately, bounded by `--workers`, and results are consumed in submission
+order, so the output stays readable while everything is in flight.
 
 ```bash
 uv run resolve-episodes family-guy --keys      # which shows the source has

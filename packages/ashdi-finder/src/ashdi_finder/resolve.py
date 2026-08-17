@@ -1,138 +1,63 @@
-"""The whole pipeline in one call: page -> ashdi iframes -> .m3u8 streams.
+"""Page → ashdi iframes → .m3u8 streams, synchronously.
 
-Shared by the CLI and the HTTP API so both behave identically.
+Every decision lives in `results`; this module only sequences requests. It never
+imports an HTTP library — the requester arrives as an argument, so it can be
+httpx, a socket you drive yourself, or a canned response in a test.
 """
 
-from dataclasses import dataclass, field
-from typing import NotRequired, TypedDict
-
-import httpx
-
-from ashdi_finder.fetcher import fetch_html
-from ashdi_finder.finder import find_ashdi_iframes, is_ashdi_url
-from ashdi_finder.player import Stream, extract_streams
-
-
-class FetchError(Exception):
-    """The page itself could not be downloaded."""
-
-
-class StreamPayload(TypedDict):
-    url: str
-    label: str | None
-    source: str
-
-
-class PlayerPayload(TypedDict):
-    url: str
-    attr: str
-    error: str | None
-    streams: list[StreamPayload]
-    # Only when the caller asked for the matched markup.
-    html: NotRequired[str]
-
-
-class ResolvePayload(TypedDict):
-    source_url: str
-    final_url: str
-    count: int
-    stream_count: int
-    players: list[PlayerPayload]
-
-
-@dataclass(slots=True)
-class PlayerResult:
-    """One ashdi player page: where we found it and what it plays."""
-
-    url: str
-    attr: str
-    html: str = ""
-    streams: list[Stream] = field(default_factory=list)
-    error: str | None = None
-
-    def to_dict(self, include_html: bool = False) -> PlayerPayload:
-        payload = PlayerPayload(
-            url=self.url,
-            attr=self.attr,
-            error=self.error,
-            streams=[
-                StreamPayload(url=s.url, label=s.label, source=s.source) for s in self.streams
-            ],
-        )
-        if include_html:
-            payload["html"] = self.html
-        return payload
-
-
-@dataclass(slots=True)
-class ResolveResult:
-    source_url: str
-    final_url: str
-    players: list[PlayerResult]
-
-    @property
-    def streams(self) -> list[Stream]:
-        return [s for p in self.players for s in p.streams]
-
-    def to_dict(self, include_html: bool = False) -> ResolvePayload:
-        return ResolvePayload(
-            source_url=self.source_url,
-            final_url=self.final_url,
-            count=len(self.players),
-            stream_count=len(self.streams),
-            players=[p.to_dict(include_html) for p in self.players],
-        )
+from ashdi_finder import results as core
+from ashdi_finder.fetching import Fetcher, FetchError, Response
+from ashdi_finder.results import ResolveResult
 
 
 def resolve(
     url: str,
     *,
-    timeout: float = 20.0,
+    fetcher: Fetcher,
     follow: bool = True,
     html: str | None = None,
-    proxy: str | None = None,
 ) -> ResolveResult:
     """Scan `url` for ashdi iframes and, unless `follow` is off, open each one.
 
-    `follow=False` means "make no extra requests" — a URL that is already a
-    player page still gets parsed, since its HTML is in hand either way.
+    `follow=False` means "make no extra requests". Pass `html` to skip the first
+    request entirely and work from a page you already have.
 
-    Pass `html` to skip the first download and parse an already-fetched page.
-    Raises `FetchError` only for the initial page; a player that fails to load
-    lands in that `PlayerResult.error` instead.
+    Raises `FetchError` only for the first page; a player that fails to load
+    lands in its own `PlayerResult.error`.
     """
     if html is None:
-        try:
-            html, final_url = fetch_html(url, timeout=timeout, proxy=proxy)
-        except httpx.HTTPError as exc:
-            raise FetchError(str(exc)) from exc
+        page = fetch(fetcher, url)
+        html, final_url = page.text, page.url
     else:
         final_url = url
 
-    # An ashdi URL is already the player page — no iframe hunting needed.
-    if is_ashdi_url(final_url):
-        player = PlayerResult(url=final_url, attr="direct", streams=extract_streams(html))
-        return ResolveResult(url, final_url, [player])
+    if core.is_player_page(final_url):
+        return core.direct(url, final_url, html)
 
-    players = [
-        _open_player(hit, referer=final_url, timeout=timeout, follow=follow, proxy=proxy)
-        for hit in find_ashdi_iframes(html, base_url=final_url)
-    ]
+    players = []
+    for hit in core.hits_in(html, final_url):
+        if not follow:
+            players.append(core.unopened(hit))
+            continue
+        try:
+            page = fetch(fetcher, hit.url, referer=final_url)
+        except FetchError as exc:
+            players.append(core.failed(hit, exc))
+            continue
+        players.append(core.opened(hit, page.text))
+
     return ResolveResult(url, final_url, players)
 
 
-def _open_player(
-    hit, *, referer: str, timeout: float, follow: bool, proxy: str | None = None
-) -> PlayerResult:
-    result = PlayerResult(url=hit.url, attr=hit.attr, html=hit.html)
-    if not follow:
-        return result
+def fetch(fetcher: Fetcher, url: str, referer: str | None = None) -> Response:
+    """Call the injected requester and normalise however it failed.
 
+    Broad on purpose: we don't know what the caller's requester raises — httpx
+    errors, socket errors, something of their own — and it isn't our business.
+    """
     try:
-        player_html, _ = fetch_html(hit.url, timeout=timeout, referer=referer, proxy=proxy)
-    except httpx.HTTPError as exc:
-        result.error = str(exc)
-        return result
-
-    result.streams = extract_streams(player_html)
-    return result
+        return fetcher.fetch(url, referer=referer)
+    except FetchError:
+        raise
+    except Exception as exc:
+        raise FetchError(f"{url}: {exc}") from exc

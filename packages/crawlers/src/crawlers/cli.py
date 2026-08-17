@@ -1,6 +1,9 @@
 """One entry point among several: look at a source's pages from the terminal.
 
-`crawlers.engine.run` is the other one — that's what apps call.
+`crawlers.run` and `crawlers.arun` are the others — that's what apps call.
+
+This module is the only one in the package that knows an HTTP library exists,
+and it imports it lazily.
 """
 
 import argparse
@@ -60,19 +63,24 @@ def main(argv: list[str] | None = None) -> int:
         print("error: pages and --start must be >= 1", file=sys.stderr)
         return 2
 
+    try:
+        fetcher = _fetcher(args)
+    except ImportError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
     # Printing is itself a sink, so JSON output just swaps it for an in-memory one.
     sink = from_spec(args.sink or ("memory" if args.json else "stdout"))
     found = 0
 
-    with contextlib.closing(sink):
+    with contextlib.closing(sink), fetcher:
         pages = []
         for page in crawl(
             source,
             args.pages,
             args.start,
-            timeout=args.timeout,
+            fetcher=fetcher,
             delay=args.delay,
-            proxy=args.proxy,
         ):
             pages.append(page)
             if page.error:
@@ -96,6 +104,19 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     return 0 if found else 1
+
+
+def _fetcher(args: argparse.Namespace):
+    """The default requester. Only the CLI needs one, so it's an optional extra."""
+    try:
+        from httpkit import build_fetcher, resolve_pool
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(
+            "the CLI needs a requester: install crawlers[cli], or use the library "
+            "with a fetcher of your own"
+        ) from exc
+
+    return build_fetcher(proxy=resolve_pool(args.proxy), timeout=args.timeout)
 
 
 def _only_source():

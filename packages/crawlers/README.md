@@ -1,10 +1,27 @@
 # crawlers
 
 Listing-page crawlers. **Sources** say where the pages are and how to read them,
-**sinks** say where the items go, and the engine walks one into the other.
+**sinks** say where the items go, and the engine walks one into the other using
+a **fetcher** you provide.
 
 ```
-source (a site)  ->  engine  ->  sink (stdout / jsonl / your own)
+source (a site)  ->  engine  ->  sink (stdout / jsonl / sqlite / your own)
+                       ^
+                    fetcher (yours; httpkit has a ready one)
+```
+
+The package depends on no HTTP library. `crawl` and `acrawl` take anything with
+`fetch(url, *, referer=None) -> Response` — see `crawlers.fetching`. That's why
+proxies and retries appear nowhere in here: they're the caller's business.
+
+```python
+from crawlers import acrawl, crawl, get
+
+for page in crawl(get("kinoukr"), pages=3, fetcher=my_fetcher):
+    print(page.number, len(page.items))
+
+async for page in acrawl(get("simpsonsua"), fetcher=my_async_fetcher):
+    ...
 ```
 
 ## Adding a source
@@ -74,7 +91,11 @@ uv run crawl kinoukr 5 --sink jsonl:data/kinoukr.jsonl
 uv run crawl kinoukr 2 --json
 ```
 
-The other is `crawlers.run(source, pages, sink=...)`, which drains a crawl and
-returns `Stats` — that's what an app calls when it wants the numbers rather than
-the pages. `crawlers.crawl(...)` is the raw generator if you want to walk the
-pages yourself; [`apps/episode-resolver`](../../apps/episode-resolver) does that.
+The others are `run` / `arun`, which drain a crawl and return `Stats` for an app
+that wants the numbers rather than the pages, and `crawl` / `acrawl`, the raw
+generators — [`apps/episode-resolver`](../../apps/episode-resolver) uses the
+async one.
+
+The CLI needs a working requester, so it pulls `httpkit` through the optional
+`crawlers[cli]` extra and imports it lazily. The library itself installs only a
+parser.

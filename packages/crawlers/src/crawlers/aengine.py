@@ -1,39 +1,34 @@
-"""Walks a source's pages, synchronously.
+"""The same walk, awaited.
 
-Sequencing only: which pages to read comes from `source.page_numbers`, what a
-page means comes from `Page`, and how to make a request comes from the caller.
+Twin of `engine`: identical decisions — page numbers, what a page means, when to
+give up on one — differing only in how it waits.
 """
 
-import time
-from collections.abc import Iterator
+import asyncio
+from collections.abc import AsyncIterator
 
-from crawlers.fetching import Fetcher, FetchError
+from crawlers.fetching import AsyncFetcher
 from crawlers.models import Page, Stats
 from crawlers.sinks import Sink
 from crawlers.source import Source, page_numbers
 
 
-def crawl(
+async def acrawl(
     source: Source,
     pages: int = 1,
     start: int = 1,
     *,
-    fetcher: Fetcher,
+    fetcher: AsyncFetcher,
     delay: float = 0.5,
-) -> Iterator[Page]:
-    """Yield pages one request at a time.
-
-    A page that fails to load is yielded with `error` set rather than raising, so
-    one bad page doesn't end the run. Storing is the caller's job — see `run`.
-    """
+) -> AsyncIterator[Page]:
     for index, number in enumerate(page_numbers(source, pages, start)):
         url = source.page_url(number)
 
         if index and delay:
-            time.sleep(delay)  # don't hammer the site
+            await asyncio.sleep(delay)
 
         try:
-            page = fetcher.fetch(url)
+            page = await fetcher.fetch(url)
         except Exception as exc:  # whatever the injected requester raises
             yield Page.broken(source.name, number, url, str(exc))
             continue
@@ -41,19 +36,18 @@ def crawl(
         yield Page.of(source.name, number, url, source.parse(page.text))
 
 
-def run(
+async def arun(
     source: Source,
     pages: int = 1,
     start: int = 1,
     *,
     sink: Sink,
-    fetcher: Fetcher,
+    fetcher: AsyncFetcher,
     delay: float = 0.5,
 ) -> Stats:
-    """Same crawl, drained and summarised. What apps call."""
     stats = Stats(source=source.name)
 
-    for page in crawl(source, pages, start, fetcher=fetcher, delay=delay):
+    async for page in acrawl(source, pages, start, fetcher=fetcher, delay=delay):
         stats.pages += 1
         if page.error:
             stats.failed += 1
@@ -62,6 +56,3 @@ def run(
         stats.stored += sink.write(page.items)
 
     return stats
-
-
-__all__ = ["FetchError", "Stats", "crawl", "run"]

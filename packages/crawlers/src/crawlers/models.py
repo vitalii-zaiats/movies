@@ -1,7 +1,7 @@
 """What a crawl produces. Sources fill these in, sinks consume them."""
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass, field, replace
 from typing import Any, TypedDict, cast
 
 
@@ -46,6 +46,14 @@ class Item:
         return cast(ItemPayload, {**payload, **self.extra})
 
 
+class StatsPayload(TypedDict):
+    source: str
+    pages: int
+    failed: int
+    found: int
+    stored: int
+
+
 @dataclass(slots=True)
 class Page:
     source: str
@@ -54,6 +62,21 @@ class Page:
     items: list[Item]
     error: str | None = None
 
+    @classmethod
+    def of(cls, source: str, number: int, url: str, items: Iterable[Item]) -> "Page":
+        """A read page. Stamping the source here means no engine can forget to."""
+        return cls(
+            source=source,
+            number=number,
+            url=url,
+            items=[replace(item, source=source) for item in items],
+        )
+
+    @classmethod
+    def broken(cls, source: str, number: int, url: str, error: str) -> "Page":
+        """A page that wouldn't load. One bad page must not end a crawl."""
+        return cls(source=source, number=number, url=url, items=[], error=error)
+
     def to_dict(self) -> PagePayload:
         return PagePayload(
             source=self.source,
@@ -61,4 +84,24 @@ class Page:
             url=self.url,
             error=self.error,
             items=[item.to_dict() for item in self.items],
+        )
+
+
+@dataclass(slots=True)
+class Stats:
+    """What a drained crawl amounted to."""
+
+    source: str
+    pages: int = 0
+    failed: int = 0
+    found: int = 0
+    stored: int = 0
+
+    def to_dict(self) -> StatsPayload:
+        return StatsPayload(
+            source=self.source,
+            pages=self.pages,
+            failed=self.failed,
+            found=self.found,
+            stored=self.stored,
         )

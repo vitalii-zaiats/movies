@@ -216,18 +216,21 @@ version = "0.1.0"
 source = { editable = "packages/ashdi-finder" }
 dependencies = [
     { name = "beautifulsoup4" },
-    { name = "httpkit" },
-    { name = "httpx" },
     { name = "lxml" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "httpkit" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13" },
-    { name = "httpkit", editable = "packages/httpkit" },
-    { name = "httpx", specifier = ">=0.28" },
+    { name = "httpkit", marker = "extra == 'cli'", editable = "packages/httpkit" },
     { name = "lxml", specifier = ">=5.3" },
 ]
+provides-extras = ["cli"]
 
 [[package]]
 name = "asyncpg"
@@ -350,18 +353,21 @@ version = "0.1.0"
 source = { editable = "packages/crawlers" }
 dependencies = [
     { name = "beautifulsoup4" },
-    { name = "httpkit" },
-    { name = "httpx" },
     { name = "lxml" },
+]
+
+[package.optional-dependencies]
+cli = [
+    { name = "httpkit" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13" },
-    { name = "httpkit", editable = "packages/httpkit" },
-    { name = "httpx", specifier = ">=0.28" },
+    { name = "httpkit", marker = "extra == 'cli'", editable = "packages/httpkit" },
     { name = "lxml", specifier = ">=5.3" },
 ]
+provides-extras = ["cli"]
 
 [[package]]
 name = "episode-resolver"
@@ -370,12 +376,14 @@ source = { editable = "apps/episode-resolver" }
 dependencies = [
     { name = "ashdi-finder" },
     { name = "crawlers" },
+    { name = "httpkit" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "ashdi-finder", editable = "packages/ashdi-finder" },
     { name = "crawlers", editable = "packages/crawlers" },
+    { name = "httpkit", editable = "packages/httpkit" },
 ]
 
 [[package]]

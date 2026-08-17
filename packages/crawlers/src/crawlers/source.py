@@ -36,6 +36,17 @@ class Source(ABC):
         """Items on one listing page, in document order."""
 
 
+def page_numbers(source: Source, pages: int, start: int) -> list[int]:
+    """Which pages to walk. Shared by both engines so they can't disagree.
+
+    A source that isn't paginated has exactly one document; asking for more would
+    just refetch it.
+    """
+    if not source.paginated:
+        return [1]
+    return [start + offset for offset in range(max(0, pages))]
+
+
 def register(cls: type[Source]) -> type[Source]:
     if not getattr(cls, "name", None):
         raise ValueError(f"{cls.__name__} needs a `name`")

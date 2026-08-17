@@ -1,11 +1,17 @@
-"""CLI: give it a page URL, it prints the ashdi.vip iframes and their .m3u8 streams."""
+"""CLI: give it a page URL, it prints the ashdi.vip iframes and their .m3u8 streams.
+
+This is the only module in the package that knows an HTTP library exists, and it
+imports it lazily — the library itself works with whatever requester you hand it.
+"""
 
 import argparse
 import json
 import sys
 from pathlib import Path
 
-from ashdi_finder.resolve import FetchError, ResolveResult, resolve
+from ashdi_finder.fetching import FetchError
+from ashdi_finder.resolve import resolve
+from ashdi_finder.results import ResolveResult
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -49,15 +55,18 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     try:
-        result = resolve(
-            args.url,
-            timeout=args.timeout,
-            follow=not args.no_follow,
-            html=html,
-            proxy=args.proxy,
-        )
+        fetcher = _fetcher(args)
+    except ImportError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    try:
+        with fetcher:
+            result = resolve(
+                args.url, fetcher=fetcher, follow=not args.no_follow, html=html
+            )
     except FetchError as exc:
-        print(f"fetch failed: {args.url}: {exc}", file=sys.stderr)
+        print(f"fetch failed: {exc}", file=sys.stderr)
         return 2
 
     if not result.players:
@@ -72,6 +81,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.no_follow:
         return 0
     return 0 if result.streams else 1
+
+
+def _fetcher(args: argparse.Namespace):
+    """The default requester. Only the CLI needs one, so it's an optional extra."""
+    try:
+        from httpkit import build_fetcher, resolve_pool
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(
+            "the CLI needs a requester: install ashdi-finder[cli], or use the "
+            "library with a fetcher of your own"
+        ) from exc
+
+    return build_fetcher(proxy=resolve_pool(args.proxy), timeout=args.timeout)
 
 
 def _print_plain(result: ResolveResult, show_html: bool) -> None:
