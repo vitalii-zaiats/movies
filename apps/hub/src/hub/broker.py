@@ -9,14 +9,15 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
+from typing import cast
 
 from redis.asyncio import Redis
 
-from hub.protocol import ROOM_CHANNEL, ROOM_KEY, ROOM_TTL, new_code
+from hub.protocol import ROOM_CHANNEL, ROOM_KEY, ROOM_TTL, Envelope, new_code
 
 log = logging.getLogger(__name__)
 
-Handler = Callable[[dict], Awaitable[None]]
+Handler = Callable[[Envelope], Awaitable[None]]
 
 
 class Broker:
@@ -53,7 +54,7 @@ class Broker:
     async def drop(self, code: str) -> None:
         await self._redis.delete(ROOM_KEY.format(code=code))
 
-    async def publish(self, code: str, message: dict) -> None:
+    async def publish(self, code: str, message: Envelope) -> None:
         await self._redis.publish(ROOM_CHANNEL.format(code=code), json.dumps(message))
 
     async def subscribe(self, code: str, handler: Handler) -> None:
@@ -78,7 +79,7 @@ class Broker:
                 if raw.get("type") != "message":
                     continue
                 try:
-                    await handler(json.loads(raw["data"]))
+                    await handler(cast(Envelope, json.loads(raw["data"])))
                 except Exception:  # one bad message must not kill the room
                     log.exception("room %s: handler failed", code)
         except asyncio.CancelledError:

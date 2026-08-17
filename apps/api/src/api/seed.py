@@ -14,12 +14,33 @@ import sys
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NotRequired, TypedDict, cast
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import Session, engine
 from api.models import Episode, Show
 from api.vod_client import VodClient, VodUnavailable
+
+
+class ResolvedRecord(TypedDict):
+    """One line of `resolve-episodes` output, as far as the seeder cares.
+
+    Everything but the source URL is optional: the file is written by whichever
+    source ran, and a record for an episode nothing was found for carries little.
+    """
+
+    url: str
+    title: NotRequired[str]
+    key: NotRequired[str]
+    season: NotRequired[int]
+    episode: NotRequired[int]
+    episode_end: NotRequired[int | None]
+    poster: NotRequired[str | None]
+    streams: NotRequired[list[str]]
+    players: NotRequired[list[str]]
+    error: NotRequired[str]
 
 
 @dataclass
@@ -32,12 +53,12 @@ class Report:
     episodes_updated: int = 0
 
 
-def records(path: Path) -> Iterator[dict]:
+def records(path: Path) -> Iterator[ResolvedRecord]:
     with path.open(encoding="utf-8") as handle:
         for line in handle:
             line = line.strip()
             if line:
-                yield json.loads(line)
+                yield cast(ResolvedRecord, json.loads(line))
 
 
 async def seed(path: Path, limit: int | None = None) -> Report:
@@ -74,7 +95,7 @@ async def seed(path: Path, limit: int | None = None) -> Report:
     return report
 
 
-async def _show(session, key: str) -> Show:
+async def _show(session: AsyncSession, key: str) -> Show:
     show = await session.scalar(select(Show).where(Show.key == key))
     if show is None:
         show = Show(key=key, title=key.replace("-", " ").title())
@@ -83,7 +104,9 @@ async def _show(session, key: str) -> Show:
     return show
 
 
-async def _episode(session, show: Show, record: dict, vod_id: int, vod_url: str) -> bool:
+async def _episode(
+    session: AsyncSession, show: Show, record: ResolvedRecord, vod_id: int, vod_url: str
+) -> bool:
     """Upsert on the source URL. Returns True when the row is new."""
     source_url = record["url"]
     episode = await session.scalar(select(Episode).where(Episode.source_url == source_url))

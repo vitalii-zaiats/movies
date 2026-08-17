@@ -15,7 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from vod.relay import PLAYLIST_HEADERS, Relay, is_playlist
-from vod.store import VodStore
+from vod.schemas import HealthOut, VodOut
+from vod.store import Vod, VodStore
 
 
 def create_app(store: VodStore, public_url: str, proxy_url: str) -> FastAPI:
@@ -35,21 +36,12 @@ def create_app(store: VodStore, public_url: str, proxy_url: str) -> FastAPI:
     )
 
     @app.get("/health")
-    async def health() -> dict:
-        return {"status": "ok", "vods": await store.count(), "proxy": proxy_url}
+    async def health() -> HealthOut:
+        return HealthOut(status="ok", vods=await store.count(), proxy=proxy_url)
 
     @app.get("/{vod_id}")
-    async def read(vod_id: int) -> dict:
-        vod = await _get(vod_id)
-        # No upstream URL in here on purpose — outside, a VOD is our URL only.
-        return {
-            "id": vod.id,
-            "url": f"{base}/{vod.id}",
-            "playlist": f"{base}/{vod.id}/index.m3u8",
-            "title": vod.title,
-            "poster": vod.poster,
-            "created_at": vod.created_at,
-        }
+    async def read(vod_id: int) -> VodOut:
+        return VodOut.of(await _get(vod_id), base)
 
     @app.get("/{vod_id}/index.m3u8")
     async def playlist(vod_id: int) -> Response:
@@ -98,7 +90,7 @@ def create_app(store: VodStore, public_url: str, proxy_url: str) -> FastAPI:
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail=f"upstream failed: {exc}") from exc
 
-    async def _get(vod_id: int):
+    async def _get(vod_id: int) -> Vod:
         vod = await store.get(vod_id)
         if vod is None:
             raise HTTPException(status_code=404, detail=f"no vod {vod_id}")

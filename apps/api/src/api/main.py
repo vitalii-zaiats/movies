@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api import playlists
 from api.db import engine, get_session
 from api.models import Episode, Show
-from api.schemas import EpisodePage, EpisodeWithShow, ShowOut, ShowWithEpisodes
+from api.schemas import EpisodePage, EpisodeWithShow, HealthOut, ShowOut, ShowWithEpisodes
 from api.vod_client import VodClient
 
 DB = Annotated[AsyncSession, Depends(get_session)]
@@ -42,10 +42,10 @@ app.include_router(playlists.router)
 
 
 @app.get("/health")
-async def health(session: DB) -> dict:
+async def health(session: DB) -> HealthOut:
     shows = await session.scalar(select(func.count()).select_from(Show))
     episodes = await session.scalar(select(func.count()).select_from(Episode))
-    return {"status": "ok", "shows": shows, "episodes": episodes}
+    return HealthOut(status="ok", shows=shows or 0, episodes=episodes or 0)
 
 
 @app.get("/shows", response_model=list[ShowOut])

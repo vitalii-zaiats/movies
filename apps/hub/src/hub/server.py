@@ -15,7 +15,7 @@ from aiohttp import WSMsgType, web
 from redis.asyncio import Redis
 
 from hub.broker import Broker
-from hub.protocol import Role, is_code, normalise_code
+from hub.protocol import Body, Counts, Envelope, Role, is_code, normalise_code
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class Rooms:
             self.members.pop(member.code, None)
             await self.broker.unsubscribe(member.code)
 
-    async def _deliver(self, message: dict) -> None:
+    async def _deliver(self, message: Envelope) -> None:
         """A message came back off the bus — hand it to everyone but the sender."""
         code = message.get("room", "")
         sender = message.get("sender")
@@ -67,12 +67,12 @@ class Rooms:
             except ConnectionError:
                 pass  # the socket is going away; its own handler will clean up
 
-    def counts(self, code: str) -> dict[str, int]:
+    def counts(self, code: str) -> Counts:
         local = self.members.get(code, ())
-        return {
-            "displays": sum(1 for m in local if m.role == "display"),
-            "remotes": sum(1 for m in local if m.role == "remote"),
-        }
+        return Counts(
+            displays=sum(1 for m in local if m.role == "display"),
+            remotes=sum(1 for m in local if m.role == "remote"),
+        )
 
 
 def create_app(redis_url: str = "redis://127.0.0.1:6379/0") -> web.Application:
@@ -156,19 +156,21 @@ async def _join(
 
 async def _relay(broker: Broker, member: Member, raw: str) -> None:
     try:
-        body = json.loads(raw)
+        parsed = json.loads(raw)
     except json.JSONDecodeError:
         return
-    if not isinstance(body, dict) or body.get("type") not in RELAYED:
+    if not isinstance(parsed, dict) or parsed.get("type") not in RELAYED:
         return
 
+    body: Body = parsed
     body["from"] = member.role
     await broker.touch(member.code)
-    await broker.publish(member.code, {"room": member.code, "sender": member.id, "body": body})
+    await broker.publish(
+        member.code, Envelope(room=member.code, sender=member.id, body=body)
+    )
 
 
 async def _announce(broker: Broker, rooms: Rooms, code: str) -> None:
     """Tell the room who's in it. Counts are local — one hub, one truth."""
-    await broker.publish(
-        code, {"room": code, "sender": None, "body": {"type": "peers", **rooms.counts(code)}}
-    )
+    news: Body = {"type": "peers", **rooms.counts(code)}
+    await broker.publish(code, Envelope(room=code, sender=None, body=news))

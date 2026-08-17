@@ -3,6 +3,7 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 from vod_packager.ffmpeg import FfmpegError, binary, run
 from vod_packager.probe import MediaInfo, probe
@@ -14,11 +15,32 @@ EXTINF_RE = re.compile(r"^#EXTINF:(?P<duration>[\d.]+)", re.MULTILINE)
 Mode = str  # "auto" | "copy" | "encode"
 
 
+class SegmentPayload(TypedDict):
+    name: str
+    duration: float
+    size: int
+
+
+class PackagePayload(TypedDict):
+    source: str
+    duration: float
+    resolution: str
+    mode: str
+    reason: str
+    out_dir: str
+    playlist: str
+    total_size: int
+    segments: list[SegmentPayload]
+
+
 @dataclass(frozen=True, slots=True)
 class Segment:
     path: Path
     duration: float
     size: int
+
+    def to_dict(self) -> SegmentPayload:
+        return SegmentPayload(name=self.path.name, duration=self.duration, size=self.size)
 
 
 @dataclass(slots=True)
@@ -34,21 +56,18 @@ class PackageResult:
     def total_size(self) -> int:
         return sum(s.size for s in self.segments)
 
-    def to_dict(self) -> dict:
-        return {
-            "source": str(self.source.path),
-            "duration": round(self.source.duration, 3),
-            "resolution": self.source.resolution,
-            "mode": self.mode,
-            "reason": self.reason,
-            "out_dir": str(self.out_dir),
-            "playlist": str(self.playlist),
-            "total_size": self.total_size,
-            "segments": [
-                {"name": s.path.name, "duration": s.duration, "size": s.size}
-                for s in self.segments
-            ],
-        }
+    def to_dict(self) -> PackagePayload:
+        return PackagePayload(
+            source=str(self.source.path),
+            duration=round(self.source.duration, 3),
+            resolution=self.source.resolution,
+            mode=self.mode,
+            reason=self.reason,
+            out_dir=str(self.out_dir),
+            playlist=str(self.playlist),
+            total_size=self.total_size,
+            segments=[segment.to_dict() for segment in self.segments],
+        )
 
 
 def package(

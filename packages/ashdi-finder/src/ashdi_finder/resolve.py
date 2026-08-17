@@ -4,6 +4,7 @@ Shared by the CLI and the HTTP API so both behave identically.
 """
 
 from dataclasses import dataclass, field
+from typing import NotRequired, TypedDict
 
 import httpx
 
@@ -16,6 +17,29 @@ class FetchError(Exception):
     """The page itself could not be downloaded."""
 
 
+class StreamPayload(TypedDict):
+    url: str
+    label: str | None
+    source: str
+
+
+class PlayerPayload(TypedDict):
+    url: str
+    attr: str
+    error: str | None
+    streams: list[StreamPayload]
+    # Only when the caller asked for the matched markup.
+    html: NotRequired[str]
+
+
+class ResolvePayload(TypedDict):
+    source_url: str
+    final_url: str
+    count: int
+    stream_count: int
+    players: list[PlayerPayload]
+
+
 @dataclass(slots=True)
 class PlayerResult:
     """One ashdi player page: where we found it and what it plays."""
@@ -26,16 +50,18 @@ class PlayerResult:
     streams: list[Stream] = field(default_factory=list)
     error: str | None = None
 
-    def to_dict(self, include_html: bool = False) -> dict:
-        return {
-            "url": self.url,
-            "attr": self.attr,
-            "error": self.error,
-            "streams": [
-                {"url": s.url, "label": s.label, "source": s.source} for s in self.streams
+    def to_dict(self, include_html: bool = False) -> PlayerPayload:
+        payload = PlayerPayload(
+            url=self.url,
+            attr=self.attr,
+            error=self.error,
+            streams=[
+                StreamPayload(url=s.url, label=s.label, source=s.source) for s in self.streams
             ],
-            **({"html": self.html} if include_html else {}),
-        }
+        )
+        if include_html:
+            payload["html"] = self.html
+        return payload
 
 
 @dataclass(slots=True)
@@ -48,14 +74,14 @@ class ResolveResult:
     def streams(self) -> list[Stream]:
         return [s for p in self.players for s in p.streams]
 
-    def to_dict(self, include_html: bool = False) -> dict:
-        return {
-            "source_url": self.source_url,
-            "final_url": self.final_url,
-            "count": len(self.players),
-            "stream_count": len(self.streams),
-            "players": [p.to_dict(include_html) for p in self.players],
-        }
+    def to_dict(self, include_html: bool = False) -> ResolvePayload:
+        return ResolvePayload(
+            source_url=self.source_url,
+            final_url=self.final_url,
+            count=len(self.players),
+            stream_count=len(self.streams),
+            players=[p.to_dict(include_html) for p in self.players],
+        )
 
 
 def resolve(

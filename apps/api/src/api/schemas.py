@@ -8,6 +8,12 @@ from api.models import Episode, Playlist, Show
 from api.settings import settings
 
 
+class HealthOut(BaseModel):
+    status: str
+    shows: int
+    episodes: int
+
+
 class ShowOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

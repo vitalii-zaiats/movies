@@ -12,6 +12,7 @@ some folders are themed collections rather than a show (`lgbt/`, `podoroz/`).
 """
 
 import re
+from typing import NotRequired, TypedDict
 from xml.etree import ElementTree
 
 from crawlers.models import Item
@@ -38,6 +39,19 @@ EPISODE_RE = re.compile(
 
 # Folder form `<key>-sezon-<number>`; the key there is the canonical show slug.
 FOLDER_RE = re.compile(r"^(?P<key>.+)-sezon-\d+$")
+
+
+class EpisodeUrl(TypedDict):
+    """What an episode URL tells us on its own, before any page is fetched."""
+
+    key: str
+    season: int
+    episode: int
+    # Set when the episode aired as a pair, e.g. `13-14`.
+    episode_end: int | None
+    id: int
+    # Only present when the sitemap entry carried one.
+    lastmod: NotRequired[str]
 
 
 @register
@@ -70,8 +84,8 @@ class SimpsonsUA(Source):
         return items
 
 
-def parse_episode_url(url: str) -> dict | None:
-    """`{key, season, episode, episode_end, id}` for an episode URL, else None."""
+def parse_episode_url(url: str) -> EpisodeUrl | None:
+    """Everything an episode URL encodes, or None when it isn't one."""
     path = url.split("//", 1)[-1].split("/", 1)[-1].strip("/")
     parts = path.split("/")
     name = parts[-1]
@@ -86,16 +100,16 @@ def parse_episode_url(url: str) -> dict | None:
     folder_match = FOLDER_RE.match(folder)
     key = (folder_match["key"] if folder_match else None) or match["key"] or DEFAULT_KEY
 
-    return {
-        "key": key,
-        "season": int(match["season"]),
-        "episode": int(match["episode"]),
-        "episode_end": int(match["last"]) if match["last"] else None,
-        "id": int(match["id"]),
-    }
+    return EpisodeUrl(
+        key=key,
+        season=int(match["season"]),
+        episode=int(match["episode"]),
+        episode_end=int(match["last"]) if match["last"] else None,
+        id=int(match["id"]),
+    )
 
 
-def _title(parsed: dict) -> str:
+def _title(parsed: EpisodeUrl) -> str:
     episode = f"{parsed['episode']:02d}"
     if parsed["episode_end"]:
         episode += f"-{parsed['episode_end']:02d}"

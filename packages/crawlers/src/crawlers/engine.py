@@ -3,6 +3,7 @@
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass, replace
+from typing import TypedDict
 
 import httpx
 
@@ -10,6 +11,14 @@ from crawlers.http import client
 from crawlers.models import Page
 from crawlers.sinks import Sink
 from crawlers.source import Source
+
+
+class StatsPayload(TypedDict):
+    source: str
+    pages: int
+    failed: int
+    found: int
+    stored: int
 
 
 @dataclass(slots=True)
@@ -20,14 +29,14 @@ class Stats:
     found: int = 0
     stored: int = 0
 
-    def to_dict(self) -> dict:
-        return {
-            "source": self.source,
-            "pages": self.pages,
-            "failed": self.failed,
-            "found": self.found,
-            "stored": self.stored,
-        }
+    def to_dict(self) -> StatsPayload:
+        return StatsPayload(
+            source=self.source,
+            pages=self.pages,
+            failed=self.failed,
+            found=self.found,
+            stored=self.stored,
+        )
 
 
 def crawl(
