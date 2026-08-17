@@ -51,8 +51,33 @@ A source that isn't paginated — one sitemap, one feed — sets `paginated = Fa
 and returns the same URL from `page_url`. The engine then reads it once and
 ignores any page count it was given.
 
+A source whose items each have a page of their own sets `item_pages = True` and
+implements `parse_item(html, url)`, returning what that page adds — see below.
+
 Registered today: `kinoukr` (listing pages) and `simpsonsua` (sitemap.xml, with
 show key / season / episode parsed out of the URLs).
+
+## The page behind a card
+
+A listing card carries a name and a thumbnail; everything else is on the page it
+links to. A source that says `item_pages = True` can read that page too, in
+`parse_item`, and the engines will fetch one per item when asked:
+
+```python
+for page in crawl(get("kinoukr"), pages=3, fetcher=my_fetcher, details=True):
+    for item in page.items:
+        item.poster                       # the full-size poster, not the thumbnail
+        item.extra["kind"]                # film | series | cartoon | cartoon-series
+        item.extra["year"], item.extra["genres"], item.extra["description"]
+        item.extra["players"]             # ashdi.vip / tortuga.tw embeds, tab order
+```
+
+`details` costs a request per item, so it's off by default. What the page says
+wins over the card; an item page that won't load leaves the card's item as it
+was, with `extra["error"]` saying why. `Movie` in `sources/kinoukr.py` lists
+every key that can turn up in `extra` — films and series share the template, and
+series link at `ashdi.vip/serial/<id>` rather than `/vod/<id>`, which
+[`ashdi-finder`](../ashdi-finder) turns into seasons and episodes.
 
 ## Sinks
 
@@ -89,7 +114,12 @@ uv run crawl --list             # registered sources
 uv run crawl kinoukr 3          # 3 pages to stdout
 uv run crawl kinoukr 5 --sink jsonl:data/kinoukr.jsonl
 uv run crawl kinoukr 2 --json
+uv run crawl kinoukr 1 --details          # open each film's page as well
 ```
+
+`--details` makes a request per item, so a page of 60 cards is 61 requests at
+`--delay` apiece. Note that both stored sinks skip URLs they already hold: to
+re-crawl a listing you already have with details on, write to a new file.
 
 The others are `run` / `arun`, which drain a crawl and return `Stats` for an app
 that wants the numbers rather than the pages, and `crawl` / `acrawl`, the raw

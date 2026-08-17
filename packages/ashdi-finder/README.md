@@ -17,6 +17,23 @@ for stream in result.streams:
     print(stream.label, stream.url)
 ```
 
+## Serials
+
+`ashdi.vip/vod/<id>` plays one file; `ashdi.vip/serial/<id>` hands the player a
+playlist nested dub → season → episode. Those come back as `Episode`s beside the
+streams, so a serial doesn't have to be read off the labels:
+
+```python
+for episode in result.episodes:
+    print(episode.season, episode.episode, episode.dub, episode.url)
+```
+
+`season` and `episode` are what the playlist's titles said — `None` when they
+said nothing, with the `sNNeNN` in the file name as the fallback. `folders` keeps
+the titles a leaf sat under, whatever the uploader called them, and `subtitles`
+the `.vtt` tracks it listed. `extract_episodes` does the same on a player page
+you already hold; it returns nothing for a film.
+
 ## The fetcher
 
 Anything with this shape will do — it's a structural `Protocol`, so nothing
@@ -65,8 +82,10 @@ Exit codes: `0` — found streams, `1` — nothing found, `2` — the first page
    page's final URL.
 2. **Player** — fetches each iframe with the page as `Referer` and reads the
    `file` key out of `new Playerjs({...})`: a single URL, a comma-separated
-   multi-quality list (`[720p]a.m3u8,[1080p]b.m3u8`), or a JSON playlist of
-   seasons and episodes whose titles come through as labels. If no player config
-   is found, the page is swept for `.m3u8` URLs.
+   multi-quality list (`[720p]a.m3u8,[1080p]b.m3u8`), or a JSON playlist. A
+   playlist is walked into `Episode`s — season and episode numbers off the folder
+   titles — and flattened into streams that keep the whole path as their label
+   (`Postmodern / Сезон 1 / Серія 1`). If no player config is found, the page is
+   swept for `.m3u8` URLs.
 
 Server-rendered HTML only — iframes injected later by JS won't show up.

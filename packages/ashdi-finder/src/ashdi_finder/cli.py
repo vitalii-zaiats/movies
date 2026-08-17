@@ -104,6 +104,10 @@ def _print_plain(result: ResolveResult, show_html: bool) -> None:
         if player.error:
             print(f"  fetch failed: {player.error}", file=sys.stderr)
             continue
+        if player.episodes:
+            seasons = sorted({e.season for e in player.episodes if e.season is not None})
+            listed = ", ".join(str(s) for s in seasons) or "none numbered"
+            print(f"  {len(player.episodes)} episodes  seasons: {listed}")
         for stream in player.streams:
             print(f"  {stream.label + '  ' if stream.label else ''}{stream.url}")
 

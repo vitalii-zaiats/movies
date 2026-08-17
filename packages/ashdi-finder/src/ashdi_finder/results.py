@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import NotRequired, TypedDict
 
 from ashdi_finder.finder import IframeHit, find_ashdi_iframes, is_ashdi_url
-from ashdi_finder.player import Stream, extract_streams
+from ashdi_finder.player import Episode, Stream, extract_episodes, extract_streams
 
 
 class StreamPayload(TypedDict):
@@ -17,11 +17,33 @@ class StreamPayload(TypedDict):
     source: str
 
 
+class SubtitlePayload(TypedDict):
+    url: str
+    label: str | None
+
+
+class EpisodePayload(TypedDict):
+    """One playlist entry. `url` is its first stream — the rest, if a leaf had
+    several qualities, are in the player's own `streams`."""
+
+    title: str
+    season: int | None
+    episode: int | None
+    episode_end: int | None
+    dub: str | None
+    url: str | None
+    poster: str | None
+    video_id: str | None
+    subtitles: list[SubtitlePayload]
+
+
 class PlayerPayload(TypedDict):
     url: str
     attr: str
     error: str | None
     streams: list[StreamPayload]
+    # A serial's playlist, empty for a film.
+    episodes: list[EpisodePayload]
     # Only when the caller asked for the matched markup.
     html: NotRequired[str]
 
@@ -31,6 +53,7 @@ class ResolvePayload(TypedDict):
     final_url: str
     count: int
     stream_count: int
+    episode_count: int
     players: list[PlayerPayload]
 
 
@@ -42,6 +65,7 @@ class PlayerResult:
     attr: str
     html: str = ""
     streams: list[Stream] = field(default_factory=list)
+    episodes: list[Episode] = field(default_factory=list)
     error: str | None = None
 
     def to_dict(self, include_html: bool = False) -> PlayerPayload:
@@ -51,6 +75,22 @@ class PlayerResult:
             error=self.error,
             streams=[
                 StreamPayload(url=s.url, label=s.label, source=s.source) for s in self.streams
+            ],
+            episodes=[
+                EpisodePayload(
+                    title=e.title,
+                    season=e.season,
+                    episode=e.episode,
+                    episode_end=e.episode_end,
+                    dub=e.dub,
+                    url=e.url,
+                    poster=e.poster,
+                    video_id=e.video_id,
+                    subtitles=[
+                        SubtitlePayload(url=s.url, label=s.label) for s in e.subtitles
+                    ],
+                )
+                for e in self.episodes
             ],
         )
         if include_html:
@@ -68,12 +108,18 @@ class ResolveResult:
     def streams(self) -> list[Stream]:
         return [s for p in self.players for s in p.streams]
 
+    @property
+    def episodes(self) -> list[Episode]:
+        """Every episode across the players — empty unless one played a serial."""
+        return [e for p in self.players for e in p.episodes]
+
     def to_dict(self, include_html: bool = False) -> ResolvePayload:
         return ResolvePayload(
             source_url=self.source_url,
             final_url=self.final_url,
             count=len(self.players),
             stream_count=len(self.streams),
+            episode_count=len(self.episodes),
             players=[p.to_dict(include_html) for p in self.players],
         )
 
@@ -89,7 +135,12 @@ def direct(source_url: str, final_url: str, html: str) -> ResolveResult:
     Parsed even when following is switched off: its HTML is already in hand, so
     reading it costs no request.
     """
-    player = PlayerResult(url=final_url, attr="direct", streams=extract_streams(html))
+    player = PlayerResult(
+        url=final_url,
+        attr="direct",
+        streams=extract_streams(html),
+        episodes=extract_episodes(html),
+    )
     return ResolveResult(source_url, final_url, [player])
 
 
@@ -105,6 +156,8 @@ def unopened(hit: IframeHit) -> PlayerResult:
 def opened(hit: IframeHit, player_html: str) -> PlayerResult:
     result = unopened(hit)
     result.streams = extract_streams(player_html)
+    # A `/serial/` player: the same streams, with their seasons kept.
+    result.episodes = extract_episodes(player_html)
     return result
 
 

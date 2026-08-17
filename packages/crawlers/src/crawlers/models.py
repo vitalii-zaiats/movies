@@ -36,6 +36,24 @@ class Item:
     # Open by nature — each source decides — so it stays a mapping.
     extra: Mapping[str, Any] = field(default_factory=dict)
 
+    def with_details(self, other: "Item") -> "Item":
+        """This item as its own page describes it.
+
+        The page wins wherever it has an answer — its poster is the full-size one,
+        its title the untruncated one — and the listing's URL stays the item's
+        identity, because that's what the sinks have already stored it under.
+        """
+        return replace(
+            self,
+            title=other.title or self.title,
+            poster=other.poster or self.poster,
+            extra={**self.extra, **other.extra},
+        )
+
+    def with_error(self, error: str) -> "Item":
+        """The item as it stands, saying why it isn't more than that."""
+        return replace(self, extra={**self.extra, "error": error})
+
     def to_dict(self) -> ItemPayload:
         payload = ItemPayload(
             source=self.source, title=self.title, url=self.url, poster=self.poster

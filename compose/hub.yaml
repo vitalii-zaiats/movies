@@ -1,0 +1,13 @@
+# The pairing socket: what the display and the remote meet over.
+
+services:
+  hub:
+    build:
+      context: .
+      dockerfile: apps/hub/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped

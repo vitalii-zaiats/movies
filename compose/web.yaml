@@ -1,0 +1,22 @@
+# The nginx that fronts everything: the app, /api, /media, /vod and /ws.
+#
+# The only service that publishes a port on the host, which is what makes one
+# tunnel enough for the whole stack.
+#
+# The app it serves is `frontend/` — the catalogue. `web/` is still in the repo
+# and still builds, but it's the casting pair (a display and a remote talking
+# over the hub), and nothing serves it until it has somewhere to live that isn't
+# this document root.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "80:8080"
+    depends_on:
+      - api
+      - hub
+      - vod
+    restart: unless-stopped

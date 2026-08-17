@@ -1,0 +1,45 @@
+# The catalogue API, and the step that prepares its schema.
+#
+# The two live in one file because they are one thing said twice: the same image,
+# the same database, and one of them is meaningless without the other.
+
+services:
+  # Runs to completion before the API starts, and stays out of the way after.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
+    entrypoint: ["alembic"]
+    command: ["upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
+      API_VOD_GRPC_TARGET: vod:50051
+      # A path, not a host: the browser reaches the VOD service through nginx.
+      API_VOD_BASE: /vod
+      # Banners the admin uploaded. The row is in postgres and the bytes are on
+      # this volume — losing one without the other leaves a home screen full of
+      # broken images, so they're backed up together or not at all.
+      API_MEDIA_ROOT: /data/media
+      API_MEDIA_BASE: /media
+    volumes:
+      - mediadata:/data/media
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      vod:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  mediadata:

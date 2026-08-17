@@ -1,0 +1,30 @@
+# The loading jobs. Behind the `tools` profile: they run once, on purpose, and
+# never as a side effect of bringing the stack up.
+
+services:
+  # Registers playlists with the VOD service and posts the episodes to the API.
+  # Note which way the writes go — the API never writes to the VOD service, so
+  # the job that crawled the streams is the one that loads them.
+  #
+  #   docker compose run --rm seed data/family-guy-streams.jsonl
+  #
+  # The image carries the seeder's other entry points too; override the default
+  # one to reach them:
+  #
+  #   docker compose run --rm --entrypoint seed-crawled     seed data/kinoukr_all.jsonl
+  #   docker compose run --rm --entrypoint seed-collections seed data/kinoukr_all.jsonl --email you@example.com
+  seed:
+    build:
+      context: .
+      dockerfile: apps/seeder/Dockerfile
+    environment:
+      CATALOGUE_URL: http://api:8020
+      VOD_GRPC_TARGET: vod:50051
+    volumes:
+      - ./data:/app/data:ro
+    profiles: ["tools"]
+    depends_on:
+      api:
+        condition: service_started
+      vod:
+        condition: service_started

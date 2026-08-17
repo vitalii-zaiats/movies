@@ -14,6 +14,9 @@ postgres_db: kino
 # served from one origin through nginx.
 vod_base: /vod
 
+# Where a browser reaches uploaded banners. Same reasoning, same nginx.
+media_base: /media
+
 # Only used by the `tunnel` profile. Keep the real one in a vault:
 #   ansible-vault encrypt_string 'token' --name pinggy_token
 pinggy_token: ""

@@ -10,13 +10,16 @@ dependencies = [
     "contracts",
     "fastapi>=0.115",
     "grpcio>=1.68",
+    "pydantic[email]>=2.9",
     "pydantic-settings>=2.6",
+    "python-multipart>=0.0.9",
     "sqlalchemy[asyncio]>=2.0",
     "uvicorn>=0.32",
 ]
 
 [project.scripts]
 api = "api.__main__:main"
+api-admin = "api.cli:main"
 
 [tool.uv.sources]
 contracts = { workspace = true }

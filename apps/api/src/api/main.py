@@ -1,33 +1,38 @@
-"""The catalogue API.
+"""The app: middleware, routers, and one place where a refusal becomes a status.
 
-Routes only translate: query string in, DTO out. Decisions live in `services`,
-queries in `repositories`.
+Everything else is in `modules/`. A new feature is a new folder and a line in
+`modules/__init__.py` — this file shouldn't have to grow for it.
 """
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
-from api import playlists
-from api.db import engine
-from api.deps import Catalogue
-from api.errors import CatalogueError, Conflict, Invalid, NotFound
-from api.schemas import (
-    EpisodePage,
-    EpisodeWithShow,
-    HealthOut,
-    IngestReport,
-    IngestRequest,
-    ShowOut,
-    ShowWithEpisodes,
-)
-from api.vod_client import VodClient
+from api.clients.vod import VodClient
+from api.core.database import engine
+from api.errors import CatalogueError, Conflict, Forbidden, Invalid, NotFound, Unauthorized
+from api.modules import ROUTERS
+from api.modules.accounts.transport import TOKEN_HEADER, SessionMiddleware
+from api.modules.catalogue.deps import Catalogue
+from api.settings import settings
 
-STATUS = {NotFound: 404, Conflict: 409, Invalid: 400}
+STATUS = {
+    NotFound: 404,
+    Conflict: 409,
+    Invalid: 400,
+    Unauthorized: 401,
+    Forbidden: 403,
+}
+
+
+class HealthOut(BaseModel):
+    status: str
+    shows: int
+    episodes: int
 
 
 @asynccontextmanager
@@ -39,74 +44,49 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await engine.dispose()
 
 
-app = FastAPI(title="catalogue api", version="0.1.0", lifespan=lifespan)
+def create_app() -> FastAPI:
+    app = FastAPI(title="catalogue api", version="0.2.0", lifespan=lifespan)
 
-# The dashboard and the remote are served from another port (and, on a phone,
-# another host). Open CORS is fine for a LAN tool; put auth in front before this
-# ever faces anything wider.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(playlists.router)
-
-
-@app.exception_handler(CatalogueError)
-async def domain_error(request: Request, exc: CatalogueError) -> JSONResponse:
-    """One place where a refusal becomes a status code."""
-    return JSONResponse({"detail": str(exc)}, status_code=STATUS.get(type(exc), 400))
-
-
-@app.get("/health")
-async def health(catalogue: Catalogue) -> HealthOut:
-    shows, episodes = await catalogue.counts()
-    return HealthOut(status="ok", shows=shows, episodes=episodes)
-
-
-@app.get("/shows", response_model=list[ShowOut])
-async def list_shows(catalogue: Catalogue):
-    return await catalogue.all_shows()
-
-
-@app.get("/shows/{key}", response_model=ShowWithEpisodes)
-async def read_show(key: str, catalogue: Catalogue):
-    return await catalogue.show(key)
-
-
-@app.get("/episodes", response_model=EpisodePage)
-async def list_episodes(
-    catalogue: Catalogue,
-    show: str | None = None,
-    season: int | None = None,
-    q: Annotated[str | None, Query(description="substring of the title")] = None,
-    playable: Annotated[bool | None, Query(description="only ones with a VOD")] = None,
-    limit: Annotated[int, Query(ge=1, le=200)] = 50,
-    offset: Annotated[int, Query(ge=0)] = 0,
-) -> EpisodePage:
-    episodes, total = await catalogue.episode_page(
-        show=show, season=season, title_like=q, playable=playable, limit=limit, offset=offset
+    # Cookies and the wildcard don't mix, and pretending otherwise is how an
+    # API ends up letting any page on the internet make requests as whoever is
+    # reading it. So the two cases are kept honestly apart:
+    #
+    #   `*` (default)     open to anyone, no credentials. A cross-origin caller
+    #                     authenticates with a bearer token, which it can only
+    #                     have if someone gave it one.
+    #   a named list      credentials allowed, so the session cookie works from
+    #                     those origins and nowhere else.
+    #
+    # In the deployed stack neither matters much: nginx puts the app and /api on
+    # one origin, and same-origin requests never ask CORS for permission.
+    named = settings.cors_origins != ["*"]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=named,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=[TOKEN_HEADER],
     )
-    return EpisodePage(
-        total=total,
-        limit=limit,
-        offset=offset,
-        items=[EpisodeWithShow.model_validate(episode) for episode in episodes],
-    )
+    # Outermost of the two, so the token it attaches survives an error response.
+    app.add_middleware(SessionMiddleware)
+
+    for router in ROUTERS:
+        app.include_router(router)
+
+    @app.exception_handler(CatalogueError)
+    async def domain_error(request: Request, exc: CatalogueError) -> JSONResponse:
+        """One place where a refusal becomes a status code."""
+        return JSONResponse(
+            {"detail": str(exc)}, status_code=STATUS.get(type(exc), 400)
+        )
+
+    @app.get("/health", tags=["ops"])
+    async def health(catalogue: Catalogue) -> HealthOut:
+        shows, episodes = await catalogue.counts()
+        return HealthOut(status="ok", shows=shows, episodes=episodes)
+
+    return app
 
 
-@app.get("/episodes/{episode_id}", response_model=EpisodeWithShow)
-async def read_episode(episode_id: int, catalogue: Catalogue):
-    return await catalogue.episode(episode_id)
-
-
-@app.post("/ingest/episodes", response_model=IngestReport, status_code=201)
-async def ingest(body: IngestRequest, catalogue: Catalogue) -> IngestReport:
-    """Where crawled episodes come in.
-
-    The sender registers playlists with the VOD service and passes the ids here.
-    The API stores them and reads that service; it never writes to it.
-    """
-    return await catalogue.ingest(body.items)
+app = create_app()

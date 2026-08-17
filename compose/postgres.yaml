@@ -1,0 +1,23 @@
+# The catalogue's database. Published on its usual port so `uv run api` on the
+# host can talk to the same data the stack does.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: testing-shit-postgres
+    environment:
+      POSTGRES_USER: kino
+      POSTGRES_PASSWORD: kino
+      POSTGRES_DB: kino
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kino -d kino"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

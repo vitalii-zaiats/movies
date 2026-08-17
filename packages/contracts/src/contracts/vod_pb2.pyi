@@ -7,12 +7,14 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Metadata(_message.Message):
-    __slots__ = ("title", "poster")
+    __slots__ = ("title", "poster", "json")
     TITLE_FIELD_NUMBER: _ClassVar[int]
     POSTER_FIELD_NUMBER: _ClassVar[int]
+    JSON_FIELD_NUMBER: _ClassVar[int]
     title: str
     poster: str
-    def __init__(self, title: _Optional[str] = ..., poster: _Optional[str] = ...) -> None: ...
+    json: str
+    def __init__(self, title: _Optional[str] = ..., poster: _Optional[str] = ..., json: _Optional[str] = ...) -> None: ...
 
 class Vod(_message.Message):
     __slots__ = ("id", "playlist_url", "url", "metadata", "created_at")

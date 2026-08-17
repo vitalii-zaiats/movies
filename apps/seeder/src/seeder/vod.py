@@ -5,7 +5,10 @@ stream is the one who knows it exists, so creation lives on this side of the
 fence; the API only ever reads that service.
 """
 
+import json
+from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 import grpc
 from contracts import vod_pb2, vod_pb2_grpc
@@ -36,13 +39,28 @@ class VodWriter:
             await self._channel.close()
             self._channel = None
 
-    async def register(self, playlist_url: str, title: str | None = None) -> VodRef:
-        """Idempotent on the playlist URL, so re-seeding returns the same id."""
+    async def register(
+        self,
+        playlist_url: str,
+        title: str | None = None,
+        facts: Mapping[str, Any] | None = None,
+    ) -> VodRef:
+        """Idempotent on the playlist URL, so re-seeding returns the same id.
+
+        `facts` is everything the catalogue will want when it comes looking:
+        which show this belongs to, whether it's a film or a series, its year,
+        genres, language, where it was crawled from. Registering is the only
+        write in this direction — the catalogue pulls, so whatever isn't handed
+        over here it will never learn.
+        """
         if self._channel is None:
             raise RuntimeError("use VodWriter as an async context manager")
 
         request = vod_pb2.CreateVodRequest(
-            playlist_url=playlist_url, metadata=vod_pb2.Metadata(title=title)
+            playlist_url=playlist_url,
+            metadata=vod_pb2.Metadata(
+                title=title, json=json.dumps(facts or {}, ensure_ascii=False)
+            ),
         )
         try:
             response = await vod_pb2_grpc.VodServiceStub(self._channel).CreateVod(request)

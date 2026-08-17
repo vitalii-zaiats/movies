@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from vod.relay import PLAYLIST_HEADERS, Relay, is_playlist
+from vod.relay import PLAYLIST_HEADERS, PLAYLIST_TYPE, Relay, is_playlist
 from vod.schemas import HealthOut, VodOut
 from vod.store import Vod, VodStore
 
@@ -45,8 +45,24 @@ def create_app(store: VodStore, public_url: str, proxy_url: str) -> FastAPI:
 
     @app.get("/{vod_id}/index.m3u8")
     async def playlist(vod_id: int) -> Response:
+        """The playlist itself — ours if we have it, upstream's if we don't yet.
+
+        A VOD's playlist doesn't change, so the first fetch is kept and every
+        later viewer is served from it. That is what makes this service the
+        source of truth for a stream rather than a hop on the way to one: the
+        day the origin rotates its URLs, what we already hold still plays.
+        """
         vod = await _get(vod_id)
+        if vod.playlist_cache:
+            return Response(
+                content=vod.playlist_cache,
+                media_type=PLAYLIST_TYPE,
+                headers=PLAYLIST_HEADERS,
+            )
+
         status, body, content_type = await _fetch_playlist(vod.playlist_url)
+        if status == 200:
+            await store.keep_playlist(vod.id, body)
         return Response(
             content=body, status_code=status, media_type=content_type, headers=PLAYLIST_HEADERS
         )

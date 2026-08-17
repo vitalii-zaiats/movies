@@ -12,7 +12,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from api.models import Base
+from api.core.registry import Base
 from api.settings import settings
 
 config = context.config

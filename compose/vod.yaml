@@ -1,0 +1,35 @@
+# The VOD service and the one-shot that prepares its storage.
+
+services:
+  # The VOD service refuses to run against storage nobody prepared, so its
+  # schema gets its own one-shot step — the same shape as `migrate` for the API.
+  vod-init:
+    build:
+      context: .
+      dockerfile: apps/vod/Dockerfile
+    environment:
+      VOD_DB: /data/vod.db
+    entrypoint: ["vod-init"]
+    volumes:
+      - voddata:/data
+    restart: "no"
+
+  vod:
+    build:
+      context: .
+      dockerfile: apps/vod/Dockerfile
+    environment:
+      VOD_DB: /data/vod.db
+      VOD_PUBLIC_URL: /vod
+      VOD_PROXY_URL: http://proxy:8001
+    volumes:
+      - voddata:/data
+    depends_on:
+      vod-init:
+        condition: service_completed_successfully
+      proxy:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  voddata:

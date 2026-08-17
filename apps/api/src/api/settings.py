@@ -14,5 +14,38 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8020
 
+    # Who may call this from another origin. The default is the wildcard, and
+    # the wildcard deliberately means *no cookies* — see `main.create_app`.
+    # Name your origins and the session cookie starts working cross-origin.
+    cors_origins: list[str] = ["*"]
+
+    # --- identity -----------------------------------------------------------
+    # A guest *is* their token, so it has to outlive the browser session that
+    # got it. Claiming an account doesn't shorten it: same row, same login.
+    session_ttl_days: int = 365
+    session_cookie: str = "kino_session"
+    # Off by default because the LAN stack is plain http behind nginx. Turn it
+    # on the day this sits behind real TLS.
+    session_cookie_secure: bool = False
+
+    # --- uploads ------------------------------------------------------------
+    # Where banners land. A volume in compose — the database keeps the row, the
+    # disk keeps the bytes, and losing one without the other is a bad day.
+    media_root: str = "data/media"
+    # Where a browser reaches them. A path, not a host, for the same reason
+    # `vod_base` is one.
+    media_base: str = "/media"
+    max_upload_bytes: int = 8 * 1024 * 1024
+
+    # Optional shared secret for `POST /ingest/episodes`, sent as `X-Api-Key`.
+    # Unset means the endpoint stays open, which is what the seeder expects on a
+    # LAN. Set it and the endpoint takes that key or an admin session, nothing
+    # else.
+    ingest_token: str | None = None
+
+    @property
+    def session_ttl_seconds(self) -> int:
+        return self.session_ttl_days * 24 * 60 * 60
+
 
 settings = Settings()

@@ -1,0 +1,52 @@
+// The system's plain card. The tiles this app spends most of its time drawing
+// are their own components — this is the one for text that needs a ground.
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+}
+
+.card-kicker {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  text-transform: uppercase;
+}
+
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: var(--font-heading-weight);
+  line-height: 1.2;
+}
+
+.card-body {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.card-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+
+.elev-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.elev-md {
+  box-shadow: var(--shadow-md);
+}
+
+.elev-lg {
+  box-shadow: var(--shadow-lg);
+}

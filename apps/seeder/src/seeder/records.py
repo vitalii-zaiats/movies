@@ -22,6 +22,9 @@ class ResolvedRecord(TypedDict):
     poster: NotRequired[str | None]
     streams: NotRequired[list[str]]
     players: NotRequired[list[str]]
+    # One entry per way to hear this episode. A page can offer the same episode
+    # in two voices, and which one somebody wants is not the crawler's call.
+    tracks: NotRequired[list[dict[str, str | None]]]
     error: NotRequired[str]
 
 
@@ -33,11 +36,22 @@ def read(path: Path) -> Iterator[ResolvedRecord]:
                 yield cast(ResolvedRecord, json.loads(line))
 
 
-def single_stream(record: ResolvedRecord) -> str | None:
-    """The one playlist to register, if there's exactly one.
+def playable(record: ResolvedRecord) -> list[tuple[str, str | None]]:
+    """Every stream worth registering, as `(url, dub)`.
 
-    Zero means nothing was found; more than one is a choice nobody has made yet,
-    and guessing here would put the wrong stream in the catalogue.
+    A record that named its tracks gets one entry per voice — they are different
+    things to play, and choosing between them belongs to whoever is watching.
+    An older record has a flat list of streams and nothing to say about them; a
+    single one is registered nameless, and several unlabelled ones are left
+    alone, because picking between identical-looking URLs is a guess.
     """
+    tracks = record.get("tracks") or []
+    if tracks:
+        return [
+            (str(track["stream"]), track.get("audio"))
+            for track in tracks
+            if track.get("stream")
+        ]
+
     streams = record.get("streams") or []
-    return streams[0] if len(streams) == 1 else None
+    return [(streams[0], None)] if len(streams) == 1 else []

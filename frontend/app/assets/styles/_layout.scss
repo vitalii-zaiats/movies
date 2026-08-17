@@ -1,0 +1,87 @@
+// Page furniture that more than one route needs. Anything only one component
+// draws stays in that component's `<style scoped>`.
+
+// A band of content with a rule under it. Stacking these is the whole page.
+.section {
+  padding: var(--space-8);
+  border-bottom: 2px solid var(--color-divider);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.section-head {
+  display: flex;
+  gap: var(--space-4);
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+
+.section-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.section-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent-700);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Tiles that wrap. One column count for the whole app, set by --grid-card.
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--grid-card), 1fr));
+  gap: var(--space-4);
+}
+
+// Tiles that scroll sideways. The bar is hidden because the rail draws its own
+// affordance — the cards are cut off at the edge, which is the affordance.
+.scroller {
+  display: flex;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  // The rail sets the tile width, not the tile — so the same card component can
+  // sit in a wrapping grid without knowing it moved.
+  // Basis, not just width: a flex item takes its main size from `flex-basis`,
+  // so this holds even if a card declares a width of its own.
+  > * {
+    flex: 0 0 var(--rail-card);
+    width: var(--rail-card);
+    scroll-snap-align: start;
+  }
+}
+
+// A short line of facts under a title: year · 3 seasons · 62 episodes.
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+
+@media (max-width: 720px) {
+  .section {
+    padding: var(--space-6) var(--space-4);
+  }
+}

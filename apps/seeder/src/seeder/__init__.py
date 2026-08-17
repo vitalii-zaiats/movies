@@ -1,5 +1,5 @@
 from seeder.catalogue import CatalogueWriter, IngestEpisode, IngestReport
-from seeder.records import ResolvedRecord, read, single_stream
+from seeder.records import ResolvedRecord, playable, read
 from seeder.vod import VodRef, VodWriter
 
 __all__ = [
@@ -9,6 +9,6 @@ __all__ = [
     "ResolvedRecord",
     "VodRef",
     "VodWriter",
+    "playable",
     "read",
-    "single_stream",
 ]

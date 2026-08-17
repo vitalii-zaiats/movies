@@ -7,10 +7,12 @@ improvise. See `vod.schema`.
 """
 
 import asyncio
+import json
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 
 class SchemaMissing(RuntimeError):
@@ -19,11 +21,33 @@ class SchemaMissing(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class Vod:
+    """One playable thing, as this service knows it.
+
+    `playlist_url` is the only field that has to be true. `metadata` is carried
+    for whoever registered it — a poster, a title, whatever the catalogue would
+    otherwise have to go and find again — and this service never reads it.
+    """
+
     id: int
+    kind: str
     playlist_url: str
-    title: str | None
-    poster: str | None
     created_at: str
+    # What was served last time it could be fetched. A VOD's playlist doesn't
+    # change, so this is a copy rather than a cache with a staleness problem.
+    playlist_cache: str | None = None
+    cached_at: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def title(self) -> str | None:
+        """Kept as a property because the whole repo already asks for it."""
+        value = self.metadata.get("title")
+        return value if isinstance(value, str) else None
+
+    @property
+    def poster(self) -> str | None:
+        value = self.metadata.get("poster")
+        return value if isinstance(value, str) else None
 
 
 class VodStore:
@@ -54,10 +78,17 @@ class VodStore:
         return connection
 
     async def create(
-        self, playlist_url: str, title: str | None = None, poster: str | None = None
+        self,
+        playlist_url: str,
+        metadata: dict[str, Any] | None = None,
+        kind: str = "hls",
     ) -> tuple[Vod, bool]:
-        """Register a playlist. Returns `(vod, created)` — idempotent on the URL."""
-        return await asyncio.to_thread(self._create, playlist_url, title, poster)
+        """Register a source. Returns `(vod, created)` — idempotent on the URL."""
+        return await asyncio.to_thread(self._create, playlist_url, metadata or {}, kind)
+
+    async def keep_playlist(self, vod_id: int, body: str) -> None:
+        """Remember what was served, so the next viewer doesn't depend on upstream."""
+        await asyncio.to_thread(self._keep_playlist, vod_id, body)
 
     async def get(self, vod_id: int) -> Vod | None:
         return await asyncio.to_thread(self._get, vod_id)
@@ -71,23 +102,52 @@ class VodStore:
         return await asyncio.to_thread(self._count)
 
     def _create(
-        self, playlist_url: str, title: str | None, poster: str | None
+        self, playlist_url: str, metadata: dict[str, Any], kind: str
     ) -> tuple[Vod, bool]:
+        """Insert, or teach the existing row what the registrar now knows.
+
+        Two statements rather than one clever upsert: `ON CONFLICT DO UPDATE`
+        reports the same `rowcount` for both, and then "did this exist already"
+        — the question the whole idempotent seed rests on — can't be answered.
+        """
         now = datetime.now(UTC).isoformat(timespec="seconds")
+        blob = json.dumps(metadata, ensure_ascii=False)
+
         with self._connect() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO vods (playlist_url, title, poster, created_at)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(playlist_url) DO NOTHING
-                """,
-                (playlist_url, title, poster, now),
-            )
-            created = bool(cursor.rowcount)
             row = connection.execute(
                 "SELECT * FROM vods WHERE playlist_url = ?", (playlist_url,)
             ).fetchone()
-        return _row(row), created
+
+            if row is None:
+                connection.execute(
+                    """
+                    INSERT INTO vods (kind, playlist_url, metadata, created_at)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (kind, playlist_url, blob, now),
+                )
+                created = True
+            else:
+                created = False
+                # An empty blob is somebody who knows less; leave what's there.
+                if metadata:
+                    connection.execute(
+                        "UPDATE vods SET metadata = ? WHERE id = ?", (blob, row["id"])
+                    )
+
+            fresh = connection.execute(
+                "SELECT * FROM vods WHERE playlist_url = ?", (playlist_url,)
+            ).fetchone()
+
+        return _row(fresh), created
+
+    def _keep_playlist(self, vod_id: int, body: str) -> None:
+        now = datetime.now(UTC).isoformat(timespec="seconds")
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE vods SET playlist_cache = ?, cached_at = ? WHERE id = ?",
+                (body, now, vod_id),
+            )
 
     def _get(self, vod_id: int) -> Vod | None:
         with self._connect() as connection:
@@ -110,8 +170,19 @@ class VodStore:
 def _row(row: sqlite3.Row) -> Vod:
     return Vod(
         id=row["id"],
+        kind=row["kind"] or "hls",
         playlist_url=row["playlist_url"],
-        title=row["title"],
-        poster=row["poster"],
         created_at=row["created_at"],
+        playlist_cache=row["playlist_cache"],
+        cached_at=row["cached_at"],
+        metadata=_metadata(row["metadata"]),
     )
+
+
+def _metadata(raw: str | None) -> dict[str, Any]:
+    """Whatever was handed in, or nothing. A bad blob is not worth a 500."""
+    try:
+        value = json.loads(raw) if raw else {}
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}

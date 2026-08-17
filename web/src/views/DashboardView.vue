@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../lib/api'
-import type { Episode, Playlist, PlaylistDetail, Show } from '../lib/api'
+import type { Episode, Playlist, PlaylistDetail, ShowSummary } from '../lib/api'
 
-const shows = ref<Show[]>([])
+const shows = ref<ShowSummary[]>([])
+// How many the catalogue holds, against how many the picker got.
+const showTotal = ref(0)
 const playlists = ref<Playlist[]>([])
 const current = ref<PlaylistDetail | null>(null)
 const found = ref<Episode[]>([])
@@ -101,7 +103,9 @@ async function add(episode: Episode): Promise<void> {
 
 onMounted(async () => {
   await guard(async () => {
-    shows.value = await api.shows()
+    const page = await api.shows()
+    shows.value = page.items
+    showTotal.value = page.total
     form.value.show = shows.value[0]?.key ?? ''
     search.value.show = ''
   })
@@ -129,6 +133,9 @@ onMounted(async () => {
               {{ show.title }}
             </option>
           </select>
+          <p v-if="showTotal > shows.length" class="hint">
+            first {{ shows.length }} of {{ showTotal }} by title
+          </p>
           <input v-model="form.season" placeholder="season (all)" inputmode="numeric" />
           <input v-model="form.name" placeholder="name (optional)" />
           <button type="submit" :disabled="busy || !form.show">Create</button>

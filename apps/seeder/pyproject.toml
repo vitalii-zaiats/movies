@@ -12,6 +12,8 @@ dependencies = [
 
 [project.scripts]
 seed-catalogue = "seeder.__main__:main"
+seed-crawled = "seeder.crawled:main"
+seed-collections = "seeder.collections:main"
 
 [tool.uv.sources]
 contracts = { workspace = true }

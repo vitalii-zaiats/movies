@@ -1,0 +1,9 @@
+# The upstream fetcher the VOD service pulls segments through.
+
+services:
+  # Never published: only the VOD service talks to it, from inside the network.
+  proxy:
+    build:
+      context: .
+      dockerfile: apps/proxy/Dockerfile
+    restart: unless-stopped

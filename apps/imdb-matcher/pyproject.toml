@@ -1,0 +1,17 @@
+[project]
+name = "imdb-matcher"
+version = "0.1.0"
+description = "Put an IMDb id on crawled titles, from IMDb's own datasets"
+readme = "README.md"
+requires-python = ">=3.12"
+# Nothing but the standard library: gzip and a tab are the whole format, and a
+# dependency here would be a dependency in every environment that ever wants to
+# re-run the match.
+dependencies = []
+
+[project.scripts]
+match-imdb = "imdb_matcher.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

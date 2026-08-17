@@ -1,0 +1,46 @@
+// Last in, so a utility beats the component class it lands on.
+
+// Artwork comes from half a dozen scrapers and never matches. Draining it is
+// what makes a wall of it look like one catalogue.
+.grayscale {
+  filter: grayscale(1) contrast(1.08);
+}
+
+.text-muted {
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+// A dark panel: everything inside it reads as light-on-dark, including the
+// button and tag variants that flip in their own files.
+.on-ink {
+  color: var(--color-ink-text);
+  background: var(--color-ink);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clamp-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

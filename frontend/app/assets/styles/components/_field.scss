@@ -1,0 +1,78 @@
+// Inputs sit on the surface tone, not the page tone — that one step of contrast
+// is what makes them read as editable with no rounding to help.
+
+.field > label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+
+.input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  }
+
+  &:focus-visible {
+    border-color: var(--color-accent);
+    outline-offset: 0;
+  }
+}
+
+textarea.input {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+
+.seg-opt {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  + .seg-opt {
+    border-left: 1px solid var(--color-divider);
+  }
+
+  &:has(input:checked) {
+    color: var(--color-bg);
+    background: var(--color-accent);
+  }
+
+  &:not(:has(input:checked)):hover {
+    background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+}

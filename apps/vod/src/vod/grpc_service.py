@@ -2,6 +2,9 @@
 
 import logging
 
+import json
+from typing import Any
+
 import grpc
 from contracts import vod_pb2, vod_pb2_grpc
 
@@ -22,12 +25,15 @@ class VodService(vod_pb2_grpc.VodServiceServicer):
         if not playlist_url:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "playlist_url is required")
 
+        # Metadata is carried, not understood: whatever the registrar knew goes
+        # into the blob so the catalogue doesn't have to go and find it again.
         metadata = request.metadata
-        vod, created = await self._store.create(
-            playlist_url,
-            title=metadata.title if metadata.HasField("title") else None,
-            poster=metadata.poster if metadata.HasField("poster") else None,
-        )
+        carried = _blob(metadata.json)
+        if metadata.HasField("title"):
+            carried["title"] = metadata.title
+        if metadata.HasField("poster"):
+            carried["poster"] = metadata.poster
+        vod, created = await self._store.create(playlist_url, carried)
         return vod_pb2.CreateVodResponse(vod=self._message(vod), created=created)
 
     async def GetVod(  # noqa: N802
@@ -49,9 +55,26 @@ class VodService(vod_pb2_grpc.VodServiceServicer):
             id=vod.id,
             playlist_url=vod.playlist_url,
             url=self.url_for(vod.id),
-            metadata=vod_pb2.Metadata(title=vod.title, poster=vod.poster),
+            metadata=vod_pb2.Metadata(
+                title=vod.title,
+                poster=vod.poster,
+                # Everything goes back as it came: this service is a courier
+                # for it, not a reader.
+                json=json.dumps(vod.metadata, ensure_ascii=False),
+            ),
             created_at=vod.created_at,
         )
 
     def url_for(self, vod_id: int) -> str:
         return f"{self._public_url}/{vod_id}"
+
+
+def _blob(raw: str) -> dict[str, Any]:
+    """The registrar's JSON, or nothing. Malformed is not worth refusing a VOD over."""
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}

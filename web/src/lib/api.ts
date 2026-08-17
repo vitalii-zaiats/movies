@@ -10,6 +10,19 @@ export interface Show {
   poster: string | null
 }
 
+/** A show in a browse list: the API counts its episodes so nobody has to ask. */
+export interface ShowSummary extends Show {
+  episode_count: number
+  playable_count: number
+}
+
+export interface ShowPage {
+  total: number
+  limit: number
+  offset: number
+  items: ShowSummary[]
+}
+
 export interface Episode {
   id: number
   season: number
@@ -61,7 +74,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  shows: () => request<Show[]>('/shows'),
+  // Paged since the catalogue grew past a handful: the picker below takes the
+  // first slice by title and says so rather than pretending it has them all.
+  shows: (limit = 200) => request<ShowPage>(`/shows?order=title&limit=${limit}`),
 
   episodes: (params: Record<string, string | number | boolean | undefined> = {}) => {
     const query = new URLSearchParams()

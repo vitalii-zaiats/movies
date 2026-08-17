@@ -14,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 resolve-episodes = "episode_resolver.__main__:main"
+resolve-crawl = "episode_resolver.crawl:main"
 
 [tool.uv.sources]
 ashdi-finder = { workspace = true }

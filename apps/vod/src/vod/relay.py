@@ -19,6 +19,8 @@ import httpx
 PROXY_LINK_RE = re.compile(r"/\?url=([^\s\"'<>]+)")
 
 PLAYLIST_HEADERS = {"Cache-Control": "no-store"}
+# What a playlist is, when upstream didn't say and when we serve our own copy.
+PLAYLIST_TYPE = "application/vnd.apple.mpegurl"
 PASS_THROUGH = ("content-type", "content-length", "content-range", "accept-ranges")
 
 
@@ -47,7 +49,7 @@ class Relay:
         """
         response = await self._client.get(self._through(upstream))
         body = PROXY_LINK_RE.sub(lambda match: f"media?u={match.group(1)}", response.text)
-        content_type = response.headers.get("content-type", "application/vnd.apple.mpegurl")
+        content_type = response.headers.get("content-type", PLAYLIST_TYPE)
         return response.status_code, body, content_type
 
     async def open(

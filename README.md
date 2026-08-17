@@ -13,10 +13,11 @@ installed editable.
 | [`apps/proxy`](apps/proxy)                       | async (aiohttp) streaming proxy — fetches a URL, streams it back with open CORS      |
 | [`apps/episode-resolver`](apps/episode-resolver) | crawls a show's episodes, then resolves each one's ashdi streams                     |
 | [`apps/seeder`](apps/seeder)                     | loads what was crawled into the VOD service and the catalogue                        |
-| [`apps/api`](apps/api)                           | FastAPI catalogue: shows, episodes, posters, links to our VOD (Postgres + Alembic)   |
+| [`apps/api`](apps/api)                           | FastAPI catalogue: shows, episodes, users, progress, playlists (Postgres + Alembic)  |
 | [`apps/vod`](apps/vod)                           | VOD microservice: owns playlists, gRPC inwards, `vod.localhost/1` outwards (SQLite)  |
 | [`apps/hub`](apps/hub)                           | WebSocket pairing hub — display ↔ remote over a Redis bus                            |
 | [`web`](web)                                     | Vue 3 + TS + SCSS PWA: player on the big screen, remote control on the phone         |
+| [`frontend`](frontend)                           | Nuxt 4 + TS + SCSS catalogue to browse: shows, episodes, playlists, search            |
 
 ```bash
 uv sync                                            # python side
@@ -36,19 +37,41 @@ uv run hub                                         # socket     → :8010
 uv run api                                         # catalogue  → :8020
 uv run vod                                         # vod http   → :8030, grpc :50051
 cd web && npm install && npm run dev               # PWA        → :5173
+cd frontend && npm install && npm run dev          # catalogue  → :3000
 ```
 
 ## Catalogue and VOD
 
-Two services, one contract. [`apps/vod`](apps/vod) owns playable things — a row
-is an `index.m3u8` and nothing else is required. Writes go one way:
-[`apps/seeder`](apps/seeder) registers streams with the VOD service and posts
-the episodes to the API, which **only reads** that service — its gRPC client has
-no `CreateVod` at all. [`apps/api`](apps/api) owns the
-catalogue — shows, episodes, posters — and stores only a **link** to the VOD
+**[`apps/vod`](apps/vod) is the source of truth.** A row there is a playable
+thing: the playlist, a copy of it as it was when it could still be fetched, and
+a JSON blob of everything the crawl knew about what it plays. Nothing else in
+the system holds all three, and nothing else needs to.
+
+Writes go one way and stop there. [`apps/seeder`](apps/seeder) registers streams
+with the VOD service — with the whole envelope: show key, film or series, season
+and episode, year, genres, dub, IMDb id — and then asks the catalogue to go and
+look. It never writes to the catalogue.
+
+[`apps/api`](apps/api) **derives** its catalogue by reading that list. It walks
+`ListVods(after_id=cursor)` from wherever it left off, builds shows and episodes
+out of the envelopes, and keeps the cursor in a row of its own, so a catalogue
+that was down for a day catches up by itself and one that was dropped can be
+rebuilt from scratch:
+
+```bash
+docker compose run --rm seed data/<source>-streams.jsonl   # register + "go look"
+docker compose exec api api-admin sync-vods --since 0      # read the list again
+```
+
+Its gRPC client has no `CreateVod` at all — that's what keeps the direction from
+being merely a comment. The catalogue stores a **link** to the VOD
 (`http://vod.localhost:8030/1`), never an upstream stream URL. They talk over
 `vod.v1` from [`packages/contracts`](packages/contracts); neither imports the
 other, and they don't share a database.
+
+One episode can have several VODs: some sources publish the same episode in two
+dubs, which are two files and therefore two playable things. The catalogue keeps
+one episode row with a track per dub, and the player offers the choice.
 
 The VOD service hands out playlists only through [`apps/proxy`](apps/proxy):
 `GET /1/index.m3u8` redirects into it, so the origin URL stays inside and the

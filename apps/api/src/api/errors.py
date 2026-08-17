@@ -20,3 +20,11 @@ class Conflict(CatalogueError):
 
 class Invalid(CatalogueError):
     pass
+
+
+class Unauthorized(CatalogueError):
+    """No usable identity — the caller has to log in, or take a guest token."""
+
+
+class Forbidden(CatalogueError):
+    """We know who you are; you still can't have this."""

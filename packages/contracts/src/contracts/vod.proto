@@ -14,6 +14,14 @@ service VodService {
 message Metadata {
   optional string title = 1;
   optional string poster = 2;
+  // Everything else the registrar knew, as a JSON object.
+  //
+  // A blob rather than fields, because the VOD service does not read it: it
+  // carries it so whoever catalogues these later doesn't have to go and find
+  // the same facts a second time. A string map was tried and was the wrong
+  // shape — genres are a list, a year is a number, and stringifying both to
+  // fit the carrier means parsing them back on faith.
+  string json = 3;
 }
 
 message Vod {

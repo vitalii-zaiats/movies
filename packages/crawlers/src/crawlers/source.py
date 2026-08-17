@@ -27,6 +27,11 @@ class Source(ABC):
     # the page count instead of fetching the same URL over and over.
     paginated: ClassVar[bool] = True
 
+    # True means each listed item has a page of its own worth opening — see
+    # `parse_item`. It costs a request per item, so the engines only follow those
+    # when the caller asks for details.
+    item_pages: ClassVar[bool] = False
+
     @abstractmethod
     def page_url(self, number: int) -> str:
         """Absolute URL of listing page `number` (1-based)."""
@@ -34,6 +39,15 @@ class Source(ABC):
     @abstractmethod
     def parse(self, html: str) -> list[Item]:
         """Items on one listing page, in document order."""
+
+    def parse_item(self, html: str, url: str) -> Item | None:
+        """What an item's own page adds, for sources that set `item_pages`.
+
+        The engines merge the result over the listing item, so returning only
+        what the page actually said is enough. None means this HTML wasn't an
+        item page at all — a 404, a section index — and the listing item stands.
+        """
+        return None
 
 
 def page_numbers(source: Source, pages: int, start: int) -> list[int]:

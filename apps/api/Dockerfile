@@ -32,6 +32,13 @@ COPY apps/api/alembic.ini ./
 COPY apps/api/migrations ./migrations
 
 RUN useradd --system --uid 10001 app && chown -R app /app
+
+# Created here, before the volume is ever mounted over it. A named volume takes
+# its ownership from the image's directory the first time it's used; without
+# this it would be created as root and the unprivileged process would fail its
+# first upload with EACCES.
+RUN mkdir -p /data/media && chown -R app /data
+
 USER app
 
 EXPOSE 8020

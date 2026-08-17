@@ -1,0 +1,26 @@
+{
+  "name": "@testing-shit/frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --host",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "hls.js": "^1.7.0",
+    "qrcode": "^1.5.4",
+    "nuxt": "^4.5.2",
+    "vue": "^3.5.41"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "sass-embedded": "^1.102.0",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.3.10"
+  }
+}

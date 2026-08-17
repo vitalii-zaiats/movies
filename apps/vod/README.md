@@ -1,13 +1,34 @@
 # vod
 
-The VOD microservice. It owns playable things: one row, one `index.m3u8`.
-Everything else — title, poster — is metadata it will happily hold and is null
-until someone fills it in. The rich metadata lives in [`apps/api`](../api).
+The VOD microservice, and **the source of truth for anything playable**. One row
+is one playable thing:
+
+```python
+VOD(
+    id=1,
+    kind="hls",                    # a playlist we relay, or bytes we serve in ranges
+    playlist_url="https://…/index.m3u8",
+    playlist_cache="#EXTM3U…",     # what was served, kept
+    metadata={"show_key": …, "kind": "film", "audio": "Стругачка", …},
+)
+```
+
+Two of those are worth dwelling on:
+
+- **`playlist_cache`** is why this is a source of truth rather than a hop. A
+  VOD's playlist doesn't change, so the first fetch is kept and every later
+  viewer is served from it — the day the origin rotates its URLs, what we
+  already hold still plays.
+- **`metadata`** is carried and never read. It exists so [`apps/api`](../api)
+  can build its catalogue by walking this list instead of going and finding the
+  same facts a second time. Whatever isn't put in it there is nothing else in
+  the system to learn it from.
 
 Two faces, one process:
 
 - **gRPC** (`:50051`) — `vod.v1.VodService` from [`contracts`](../../packages/contracts).
-  This is how the API registers playlists and gets back an id.
+  `CreateVod` is how whoever crawled a stream registers it; `ListVods(after_id)`
+  is how the catalogue reads this list from wherever it left off.
 - **HTTP** (`:8030`) — what a player talks to: `http://vod.localhost:8030/1`.
 
 ```bash

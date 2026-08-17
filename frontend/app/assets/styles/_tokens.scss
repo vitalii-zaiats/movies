@@ -1,0 +1,91 @@
+// Modernist — the design system's tokens, carried over as they were given.
+//
+// Custom properties rather than Sass variables on purpose: every component's
+// `<style scoped>` reads them directly, so retuning the look is one file and no
+// component has to import anything to take part.
+
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #ec3013;
+  --color-accent-2: #e15b47;
+  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+
+  // Tonal ramps — one shared lightness scale, so the same step of any role
+  // matches the others in visual value.
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+
+  --color-accent-100: #fff2ef;
+  --color-accent-200: #ffe0d9;
+  --color-accent-300: #ffc4b8;
+  --color-accent-400: #ff9783;
+  --color-accent-500: #ff563c;
+  --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800;
+  --color-accent-800: #7c1405;
+  --color-accent-900: #4d170e;
+
+  --color-accent-2-100: #fff2ef;
+  --color-accent-2-200: #ffe0da;
+  --color-accent-2-300: #ffc4b9;
+  --color-accent-2-400: #ff9784;
+  --color-accent-2-500: #ef6853;
+  --color-accent-2-600: #c94b39;
+  --color-accent-2-700: #9e3526;
+  --color-accent-2-800: #71261b;
+  --color-accent-2-900: #471d16;
+
+  --font-heading: 'Archivo', system-ui, sans-serif;
+  --font-heading-weight: 800;
+  --font-body: 'Archivo', system-ui, sans-serif;
+  --font-mono: ui-monospace, menlo, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  // Square corners are the whole point of the system. Kept as tokens anyway, so
+  // softening it later is one edit rather than a grep.
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+
+  // — this app's own names, on top of the system —
+
+  // Panels that sit over artwork: the hero copy, a card's caption, the player
+  // chrome. Dark ground, light ink, whatever the page around them is doing.
+  --color-ink: #201e1d;
+  --color-ink-text: #f3f2f2;
+  --color-ink-muted: #cac8c6;
+  --color-ink-faint: #a5a3a1;
+
+  // Sized for a poster, which is what these sources actually publish: portrait,
+  // roughly 2:3. A 16:9 tile at the old widths cropped one to a sliver.
+  --rail-card: 200px; // one poster in a horizontal rail
+  --grid-card: 180px; // the narrowest a tile may get in a wrapping grid
+  --poster-ratio: 2 / 3;
+  --nav-height: 57px; // sticky nav, and what a sticky rail heading clears
+
+  // Motion. Short enough that nobody waits for it, eased out so a thing arrives
+  // rather than lands — the system has square corners and hard rules, and a
+  // bouncy entrance would argue with both.
+  --motion-fast: 120ms;
+  --motion: 180ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

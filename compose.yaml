@@ -13,174 +13,33 @@
 # No `name:` on purpose — the project keeps the directory's name, so the
 # postgres volume that already holds the catalogue stays the same one.
 
-services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: testing-shit-postgres
-    environment:
-      POSTGRES_USER: kino
-      POSTGRES_PASSWORD: kino
-      POSTGRES_DB: kino
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kino -d kino"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-  redis:
-    image: redis:8-alpine
-    container_name: testing-shit-redis
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  # Runs to completion before the API starts, and stays out of the way after.
-  migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    environment:
-      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
-    entrypoint: ["alembic"]
-    command: ["upgrade", "head"]
-    restart: "no"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    environment:
-      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
-      API_VOD_GRPC_TARGET: vod:50051
-      # A path, not a host: the browser reaches the VOD service through nginx.
-      API_VOD_BASE: /vod
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      vod:
-        condition: service_started
-    restart: unless-stopped
-
-  # The VOD service refuses to run against storage nobody prepared, so its
-  # schema gets its own one-shot step — the same shape as `migrate` for the API.
-  vod-init:
-    build:
-      context: .
-      dockerfile: apps/vod/Dockerfile
-    environment:
-      VOD_DB: /data/vod.db
-    entrypoint: ["vod-init"]
-    volumes:
-      - voddata:/data
-    restart: "no"
-
-  vod:
-    build:
-      context: .
-      dockerfile: apps/vod/Dockerfile
-    environment:
-      VOD_DB: /data/vod.db
-      VOD_PUBLIC_URL: /vod
-      VOD_PROXY_URL: http://proxy:8001
-    volumes:
-      - voddata:/data
-    depends_on:
-      vod-init:
-        condition: service_completed_successfully
-      proxy:
-        condition: service_started
-    restart: unless-stopped
-
-  # Never published: only the VOD service talks to it, from inside the network.
-  proxy:
-    build:
-      context: .
-      dockerfile: apps/proxy/Dockerfile
-    restart: unless-stopped
-
-  hub:
-    build:
-      context: .
-      dockerfile: apps/hub/Dockerfile
-    environment:
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  web:
-    build:
-      context: .
-      dockerfile: web/Dockerfile
-    ports:
-      - "80:8080"
-    depends_on:
-      - api
-      - hub
-      - vod
-    restart: unless-stopped
-
-  # One-shot: registers playlists with the VOD service and posts the episodes to
-  # the API. Note which way the writes go — the API never writes to the VOD
-  # service, so the job that crawled the streams is the one that loads them.
-  #   docker compose run --rm seed data/family-guy-streams.jsonl
-  seed:
-    build:
-      context: .
-      dockerfile: apps/seeder/Dockerfile
-    environment:
-      CATALOGUE_URL: http://api:8020
-      VOD_GRPC_TARGET: vod:50051
-    volumes:
-      - ./data:/app/data:ro
-    profiles: ["tools"]
-    depends_on:
-      api:
-        condition: service_started
-      vod:
-        condition: service_started
-
-  # Public HTTPS tunnel to nginx, for handing the phone a real URL.
-  #
-  #   docker compose --profile tunnel up -d tunnel
-  #   docker compose logs -f tunnel     # the address it hands you
-  #
-  # Behind a profile on purpose: this puts the whole stack on the open internet,
-  # which shouldn't happen as a side effect of a plain `docker compose up`.
-  #
-  # `-R0:web:8080` and not `localhost:80` — inside the network, localhost is
-  # this container, and nginx listens on 8080 without the host port mapping.
-  tunnel:
-    image: pinggy/pinggy
-    command:
-      - "-p"
-      - "443"
-      - "-R0:web:8080"
-      - "-o"
-      - "StrictHostKeyChecking=no"
-      - "-o"
-      - "ServerAliveInterval=30"
-      - "${PINGGY_TOKEN:?set PINGGY_TOKEN in .env}@pro.pinggy.io"
-    stdin_open: true
-    tty: true
-    profiles: ["tunnel"]
-    depends_on:
-      - web
-    restart: unless-stopped
-
-volumes:
-  pgdata:
-  voddata:
+# One file per service, assembled here rather than run apart. `include` merges
+# them into this single project, so a service still names its neighbours and
+# still waits for them: the API waits for `migrate` to finish, `vod` for
+# `vod-init`, `hub` for a healthy redis. Separate projects on a shared network
+# would buy independent deploys and cost exactly those guarantees, which is a
+# trade worth making deliberately and not by accident of file layout.
+#
+# `project_directory: .` is what keeps every path inside these files relative to
+# the repository root — build contexts, dockerfiles, `./data` — the way they read
+# when they all lived in one file. Without it they would resolve against
+# `compose/`.
+include:
+  - path: compose/postgres.yaml
+    project_directory: .
+  - path: compose/redis.yaml
+    project_directory: .
+  - path: compose/proxy.yaml
+    project_directory: .
+  - path: compose/vod.yaml
+    project_directory: .
+  - path: compose/api.yaml
+    project_directory: .
+  - path: compose/hub.yaml
+    project_directory: .
+  - path: compose/web.yaml
+    project_directory: .
+  - path: compose/seed.yaml
+    project_directory: .
+  - path: compose/tunnel.yaml
+    project_directory: .

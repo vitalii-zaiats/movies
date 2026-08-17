@@ -1,0 +1,102 @@
+// Buttons carry the heading face at the body's size — the system's one place
+// where the display font shows up small.
+
+.btn {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: var(--font-heading-weight);
+  line-height: 1.2;
+  color: var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+
+  svg {
+    display: block;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+.btn-primary {
+  color: var(--color-bg);
+  background: var(--color-accent);
+
+  &:hover {
+    background: var(--color-accent-600);
+  }
+
+  &:active {
+    background: var(--color-accent-700);
+  }
+}
+
+.btn-secondary {
+  border-color: var(--color-divider);
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--color-text) 14%, transparent);
+  }
+}
+
+.btn-ghost {
+  padding-inline: var(--space-1);
+  color: var(--color-accent);
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.btn-lg {
+  padding: var(--space-3) var(--space-6);
+  font-size: 16px;
+}
+
+// On a dark panel the secondary and ghost variants would vanish; this flips
+// their borrowed colours without touching the primary.
+.on-ink {
+  .btn {
+    color: var(--color-ink-text);
+  }
+
+  .btn-primary {
+    color: var(--color-ink-text);
+  }
+
+  .btn-secondary {
+    border-color: color-mix(in srgb, var(--color-ink-text) 45%, transparent);
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-ink-text) 12%, transparent);
+    }
+  }
+
+  .btn-ghost {
+    color: var(--color-accent-300);
+  }
+}

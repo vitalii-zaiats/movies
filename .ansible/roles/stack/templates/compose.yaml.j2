@@ -39,6 +39,12 @@ services:
       API_DATABASE_URL: postgresql+asyncpg://{{ postgres_user }}:{{ postgres_password }}@postgres:5432/{{ postgres_db }}
       API_VOD_GRPC_TARGET: vod:50051
       API_VOD_BASE: {{ vod_base }}
+      # Uploaded banners live on a volume, not in the image: a rebuild must not
+      # take the home screen's artwork with it.
+      API_MEDIA_ROOT: /data/media
+      API_MEDIA_BASE: {{ media_base }}
+    volumes:
+      - mediadata:/data/media
     depends_on:
       postgres:
         condition: service_healthy
@@ -113,3 +119,4 @@ services:
 volumes:
   pgdata:
   voddata:
+  mediadata:

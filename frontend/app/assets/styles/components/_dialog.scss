@@ -1,0 +1,65 @@
+// A dialog is a surface over a scrim. The scrim is the system's neutral at half
+// strength rather than plain black, so it tints the page instead of draining it.
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+  animation: dialog-scrim var(--motion-fast) var(--ease-out) both;
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(440px, 100%);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  // Rises the last few pixels into place. The scrim is already there by then,
+  // so the surface arrives onto something rather than out of nothing.
+  animation: dialog-rise var(--motion) var(--ease-out) both;
+}
+
+@keyframes dialog-scrim {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+// Somebody who asked their system for less movement gets the fade and none of
+// the travel — the dialog still announces itself, it just doesn't move.
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    animation-name: dialog-scrim;
+  }
+}
+
+.dialog-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: var(--font-heading-weight);
+}
+
+.dialog-body {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
