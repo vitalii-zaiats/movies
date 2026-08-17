@@ -1,0 +1,10 @@
+---
+# Deploy only. Schema and data are separate playbooks on purpose: bringing the
+# stack up should be safe to repeat, and neither of those is.
+#
+#   ansible-playbook site.yml                 # code + containers
+#   ansible-playbook playbooks/migrate.yml    # schema, once per change
+#   ansible-playbook playbooks/seed.yml       # data, when there is new data
+
+- name: Import the deploy playbook
+  ansible.builtin.import_playbook: playbooks/deploy.yml

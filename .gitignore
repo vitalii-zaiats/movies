@@ -13,6 +13,10 @@ dev-dist/
 # secrets — compose reads this automatically
 .env
 
+# ansible: the real host list and the real password
+.ansible/inventory.yml
+.ansible/group_vars/all.yml
+
 # crawler and resolver output
 data/
 *.db

@@ -1,0 +1,115 @@
+{{ ansible_managed | comment }}
+# Long-running services only.
+#
+# No `migrate`, no `vod-init`, no `seed`: preparing a database and loading data
+# are deploy steps, not things that happen because a container started. They
+# live in playbooks/migrate.yml and playbooks/seed.yml.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: {{ postgres_user }}
+      POSTGRES_PASSWORD: {{ postgres_password }}
+      POSTGRES_DB: {{ postgres_db }}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ postgres_user }} -d {{ postgres_db }}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_DATABASE_URL: postgresql+asyncpg://{{ postgres_user }}:{{ postgres_password }}@postgres:5432/{{ postgres_db }}
+      API_VOD_GRPC_TARGET: vod:50051
+      API_VOD_BASE: {{ vod_base }}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  vod:
+    build:
+      context: .
+      dockerfile: apps/vod/Dockerfile
+    environment:
+      VOD_DB: /data/vod.db
+      VOD_PUBLIC_URL: {{ vod_base }}
+      VOD_PROXY_URL: http://proxy:8001
+    volumes:
+      - voddata:/data
+    depends_on:
+      - proxy
+    restart: unless-stopped
+
+  # Never published: only the VOD service talks to it, from inside the network.
+  proxy:
+    build:
+      context: .
+      dockerfile: apps/proxy/Dockerfile
+    restart: unless-stopped
+
+  hub:
+    build:
+      context: .
+      dockerfile: apps/hub/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "{{ web_port }}:8080"
+    depends_on:
+      - api
+      - hub
+      - vod
+    restart: unless-stopped
+
+{% if pinggy_token %}
+  # Public HTTPS tunnel. Behind a profile: putting the stack on the open
+  # internet should be something you ask for.
+  tunnel:
+    image: pinggy/pinggy
+    command:
+      - "-p"
+      - "443"
+      - "-R0:web:8080"
+      - "-o"
+      - "StrictHostKeyChecking=no"
+      - "-o"
+      - "ServerAliveInterval=30"
+      - "${PINGGY_TOKEN}@pro.pinggy.io"
+    stdin_open: true
+    tty: true
+    profiles: ["tunnel"]
+    depends_on:
+      - web
+    restart: unless-stopped
+{% endif %}
+
+volumes:
+  pgdata:
+  voddata:

@@ -1,0 +1,51 @@
+---
+# Puts the code on the host, renders the compose file, brings the stack up.
+# Deliberately does not touch a database: see playbooks/migrate.yml.
+
+- name: Ensure the project directory exists
+  ansible.builtin.file:
+    path: "{{ project_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Sync the repository
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../../"
+    dest: "{{ project_dir }}/"
+    delete: true
+    rsync_opts:
+      - "--exclude=.git"
+      - "--exclude=.venv"
+      - "--exclude=node_modules"
+      - "--exclude=__pycache__"
+      - "--exclude=dist"
+      # Crawler output belongs to the host, not to the deploy.
+      - "--exclude=data"
+      # The compose file is rendered below, not copied.
+      - "--exclude=compose.yaml"
+
+- name: Render the compose file
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ project_dir }}/compose.yaml"
+    mode: "0644"
+  register: compose_file_rendered
+
+- name: Render .env
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ project_dir }}/.env"
+    mode: "0600"
+
+- name: Make sure there is somewhere to put crawler output
+  ansible.builtin.file:
+    path: "{{ project_dir }}/data"
+    state: directory
+    mode: "0755"
+
+- name: Build and start the stack
+  ansible.builtin.command:
+    cmd: docker compose --project-name {{ project_name }} up -d --build --remove-orphans
+    chdir: "{{ project_dir }}"
+  register: compose_up
+  changed_when: "'Started' in compose_up.stderr or 'Created' in compose_up.stderr"

@@ -1,0 +1,51 @@
+---
+# Load crawled episodes. Separate from deploy on purpose — this writes data.
+#
+#   ansible-playbook playbooks/seed.yml -e seed_file=data/simpsonsua.jsonl
+#
+# The seeder isn't a compose service: it's a job that runs once, so it's built
+# and run against the stack's network rather than sitting in the template.
+
+- name: Seed the catalogue
+  hosts: movies
+  gather_facts: false
+
+  vars:
+    seeder_image: "{{ project_name }}-seeder"
+
+  tasks:
+    - name: The file has to be on the host first
+      ansible.builtin.stat:
+        path: "{{ project_dir }}/{{ seed_file }}"
+      register: seed_source
+
+    - name: Fail with something actionable
+      ansible.builtin.fail:
+        msg: >-
+          {{ project_dir }}/{{ seed_file }} is missing — copy the resolver's
+          output over, or run resolve-episodes on the host first.
+      when: not seed_source.stat.exists
+
+    - name: Build the seeder image
+      ansible.builtin.command:
+        cmd: docker build -f apps/seeder/Dockerfile -t {{ seeder_image }} .
+        chdir: "{{ project_dir }}"
+      register: seeder_build
+      changed_when: "'Building' in seeder_build.stderr or 'naming to' in seeder_build.stderr"
+
+    - name: Register the streams with the VOD service and post the episodes
+      # Writes go one way: this job creates VODs, the API only reads them.
+      ansible.builtin.command:
+        cmd: >-
+          docker run --rm
+          --network {{ project_name }}_default
+          -e CATALOGUE_URL=http://api:8020
+          -e VOD_GRPC_TARGET=vod:50051
+          -v {{ project_dir }}/data:/app/data:ro
+          {{ seeder_image }} {{ seed_file }}
+      register: seeding
+      changed_when: "'new' in seeding.stdout"
+
+    - name: What landed
+      ansible.builtin.debug:
+        var: seeding.stdout_lines

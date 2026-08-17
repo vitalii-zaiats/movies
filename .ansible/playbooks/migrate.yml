@@ -1,0 +1,34 @@
+---
+# Schema, as an explicit step. Run it after deploy.yml and before seed.yml.
+#
+#   ansible-playbook playbooks/migrate.yml
+
+- name: Prepare the databases
+  hosts: movies
+  gather_facts: false
+
+  tasks:
+    - name: Catalogue schema (alembic)
+      ansible.builtin.command:
+        cmd: docker compose --project-name {{ project_name }} exec -T api alembic upgrade head
+        chdir: "{{ project_dir }}"
+      register: alembic
+      changed_when: "'Running upgrade' in alembic.stderr"
+
+    - name: VOD schema
+      # `run --rm`, not `exec`: the VOD service refuses to start against a
+      # database nobody prepared, so there is no running container to exec into
+      # on a fresh host. This one is idempotent.
+      ansible.builtin.command:
+        cmd: >-
+          docker compose --project-name {{ project_name }}
+          run --rm --no-deps --entrypoint vod-init vod
+        chdir: "{{ project_dir }}"
+      register: vod_init
+      changed_when: "'ready:' in vod_init.stdout"
+
+    - name: Restart the VOD service now that its storage exists
+      ansible.builtin.command:
+        cmd: docker compose --project-name {{ project_name }} up -d vod
+        chdir: "{{ project_dir }}"
+      changed_when: true

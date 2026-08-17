@@ -1,0 +1,11 @@
+---
+# Code onto the host, stack up. Nothing here touches a database.
+#
+#   ansible-playbook playbooks/deploy.yml
+
+- name: Deploy the stack
+  hosts: movies
+  gather_facts: false
+
+  roles:
+    - stack

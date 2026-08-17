@@ -1,0 +1,22 @@
+# Copy to group_vars/all.yml (gitignored — it holds the database password).
+
+project_dir: /srv/movies
+# Compose derives the network name from this, and the seed playbook needs it.
+project_name: movies
+
+web_port: 80
+
+postgres_user: kino
+postgres_password: change-me
+postgres_db: kino
+
+# Where a browser reaches the VOD service. A path, not a host: everything is
+# served from one origin through nginx.
+vod_base: /vod
+
+# Only used by the `tunnel` profile. Keep the real one in a vault:
+#   ansible-vault encrypt_string 'token' --name pinggy_token
+pinggy_token: ""
+
+# What `seed.yml` loads, relative to project_dir on the host.
+seed_file: data/family-guy-streams.jsonl
