@@ -1,8 +1,9 @@
 """SQLite storage for VODs.
 
-Deliberately no migration tool here: this service owns one table with one
-required column, and `CREATE TABLE IF NOT EXISTS` at startup is the whole story.
-The API is the one with a schema worth versioning.
+Deliberately no migration tool: this service owns one table with one required
+column. But no implicit setup either — the schema is created by `vod-init`
+before the service runs, and starting without it is an error, not a cue to
+improvise. See `vod.schema`.
 """
 
 import asyncio
@@ -11,15 +12,9 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS vods (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    playlist_url TEXT NOT NULL UNIQUE,
-    title        TEXT,
-    poster       TEXT,
-    created_at   TEXT NOT NULL
-);
-"""
+
+class SchemaMissing(RuntimeError):
+    """The database hasn't been prepared."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,10 +29,24 @@ class Vod:
 class VodStore:
     def __init__(self, path: Path) -> None:
         self.path = path
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def check(self) -> None:
+        """Refuse to run against storage nobody prepared.
+
+        Called at startup so the failure says what to do, instead of the service
+        coming up healthy on an empty database it made itself.
+        """
+        fix = f"run `vod-init --db {self.path}` first"
+        if not self.path.exists():
+            raise SchemaMissing(f"no database at {self.path} — {fix}")
+
         with self._connect() as connection:
-            connection.execute("PRAGMA journal_mode=WAL")
-            connection.executescript(SCHEMA)
+            table = connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'vods'"
+            ).fetchone()
+
+        if table is None:
+            raise SchemaMissing(f"{self.path} has no `vods` table — {fix}")
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path, timeout=10)

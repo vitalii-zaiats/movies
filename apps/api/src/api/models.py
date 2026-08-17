@@ -54,9 +54,10 @@ class Episode(Base):
     # Where the metadata came from, and what makes a re-seed idempotent.
     source_url: Mapped[str] = mapped_column(String(1000), unique=True, index=True)
 
-    # The whole point: a link into our own VOD service, never an upstream URL.
+    # The whole point: a handle into our own VOD service, never an upstream URL.
+    # Only the id — the URL a browser should use depends on how the stack is
+    # exposed today, so it's composed at response time instead of stored.
     vod_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    vod_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_now, server_default=func.now()

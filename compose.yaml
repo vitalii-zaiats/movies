@@ -73,6 +73,19 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # The VOD service refuses to run against storage nobody prepared, so its
+  # schema gets its own one-shot step — the same shape as `migrate` for the API.
+  vod-init:
+    build:
+      context: .
+      dockerfile: apps/vod/Dockerfile
+    environment:
+      VOD_DB: /data/vod.db
+    entrypoint: ["vod-init"]
+    volumes:
+      - voddata:/data
+    restart: "no"
+
   vod:
     build:
       context: .
@@ -84,7 +97,10 @@ services:
     volumes:
       - voddata:/data
     depends_on:
-      - proxy
+      vod-init:
+        condition: service_completed_successfully
+      proxy:
+        condition: service_started
     restart: unless-stopped
 
   # Never published: only the VOD service talks to it, from inside the network.
@@ -117,22 +133,23 @@ services:
       - vod
     restart: unless-stopped
 
-  # One-shot: fills the catalogue and registers playlists with the VOD service.
+  # One-shot: registers playlists with the VOD service and posts the episodes to
+  # the API. Note which way the writes go — the API never writes to the VOD
+  # service, so the job that crawled the streams is the one that loads them.
   #   docker compose run --rm seed data/family-guy-streams.jsonl
   seed:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/seeder/Dockerfile
     environment:
-      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
-      API_VOD_GRPC_TARGET: vod:50051
-    entrypoint: ["api-seed"]
+      CATALOGUE_URL: http://api:8020
+      VOD_GRPC_TARGET: vod:50051
     volumes:
       - ./data:/app/data:ro
     profiles: ["tools"]
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      api:
+        condition: service_started
       vod:
         condition: service_started
 

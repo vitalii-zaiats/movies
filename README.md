@@ -12,6 +12,7 @@ installed editable.
 | [`packages/crawlers`](packages/crawlers)         | listing-page crawlers: pluggable sources in, sinks (stdout / jsonl / sqlite) out      |
 | [`apps/proxy`](apps/proxy)                       | async (aiohttp) streaming proxy — fetches a URL, streams it back with open CORS      |
 | [`apps/episode-resolver`](apps/episode-resolver) | crawls a show's episodes, then resolves each one's ashdi streams                     |
+| [`apps/seeder`](apps/seeder)                     | loads what was crawled into the VOD service and the catalogue                        |
 | [`apps/api`](apps/api)                           | FastAPI catalogue: shows, episodes, posters, links to our VOD (Postgres + Alembic)   |
 | [`apps/vod`](apps/vod)                           | VOD microservice: owns playlists, gRPC inwards, `vod.localhost/1` outwards (SQLite)  |
 | [`apps/hub`](apps/hub)                           | WebSocket pairing hub — display ↔ remote over a Redis bus                            |
@@ -27,7 +28,8 @@ uv run resolve-episodes family-guy                 # episodes -> ashdi streams
 
 docker compose up -d                               # postgres :5432, redis :6379
 uv run --directory apps/api alembic upgrade head   # catalogue schema
-uv run api-seed data/family-guy-streams.jsonl      # fill catalogue + VOD service
+uv run vod-init                                    # vod schema
+uv run seed-catalogue data/family-guy-streams.jsonl  # fill both (services must be up)
 
 uv run proxy                                       # proxy      → :8001
 uv run hub                                         # socket     → :8010
@@ -39,7 +41,10 @@ cd web && npm install && npm run dev               # PWA        → :5173
 ## Catalogue and VOD
 
 Two services, one contract. [`apps/vod`](apps/vod) owns playable things — a row
-is an `index.m3u8` and nothing else is required. [`apps/api`](apps/api) owns the
+is an `index.m3u8` and nothing else is required. Writes go one way:
+[`apps/seeder`](apps/seeder) registers streams with the VOD service and posts
+the episodes to the API, which **only reads** that service — its gRPC client has
+no `CreateVod` at all. [`apps/api`](apps/api) owns the
 catalogue — shows, episodes, posters — and stores only a **link** to the VOD
 (`http://vod.localhost:8030/1`), never an upstream stream URL. They talk over
 `vod.v1` from [`packages/contracts`](packages/contracts); neither imports the

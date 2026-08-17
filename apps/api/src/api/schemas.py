@@ -14,6 +14,34 @@ class HealthOut(BaseModel):
     episodes: int
 
 
+class IngestEpisode(BaseModel):
+    """One episode as whoever crawled it knows it.
+
+    `vod_id` is something the sender registered with the VOD service; the API
+    takes its word for it and never creates one itself.
+    """
+
+    show_key: str
+    show_title: str | None = None
+    title: str
+    season: int
+    episode: int
+    episode_end: int | None = None
+    poster: str | None = None
+    source_url: str
+    vod_id: int | None = None
+
+
+class IngestRequest(BaseModel):
+    items: list[IngestEpisode]
+
+
+class IngestReport(BaseModel):
+    shows: int
+    created: int
+    updated: int
+
+
 class ShowOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

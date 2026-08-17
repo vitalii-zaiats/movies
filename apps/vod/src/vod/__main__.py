@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import logging
 import os
+import sys
 from pathlib import Path
 
 import grpc
@@ -12,7 +13,7 @@ from contracts import vod_pb2_grpc
 
 from vod.grpc_service import VodService
 from vod.http_app import create_app
-from vod.store import VodStore
+from vod.store import SchemaMissing, VodStore
 
 DEFAULT_DB = Path(os.environ.get("VOD_DB", "data/vod.db"))
 DEFAULT_PUBLIC_URL = os.environ.get("VOD_PUBLIC_URL", "http://vod.localhost:8030")
@@ -42,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 async def serve(args: argparse.Namespace) -> None:
     store = VodStore(args.db)
+    store.check()  # storage is prepared before we run, never by us
 
     grpc_server = grpc.aio.server()
     vod_pb2_grpc.add_VodServiceServicer_to_server(
@@ -68,7 +70,12 @@ async def serve(args: argparse.Namespace) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-    asyncio.run(serve(args))
+
+    try:
+        asyncio.run(serve(args))
+    except SchemaMissing as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
     return 0
 
 

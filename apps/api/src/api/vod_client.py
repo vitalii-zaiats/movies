@@ -1,10 +1,10 @@
-"""gRPC client for the VOD service.
+"""Read-only gRPC client for the VOD service.
 
-The API knows the VOD service only through the contract in `contracts` — no
-imports across services, no shared database.
+The API looks VODs up; it never registers them. Whoever crawled a stream is the
+one who knows it exists, so creation belongs on that side of the fence — see
+`apps/seeder`. Keeping `CreateVod` out of this client is what makes that rule
+hold instead of being a comment.
 """
-
-from dataclasses import dataclass
 
 import grpc
 from contracts import vod_pb2, vod_pb2_grpc
@@ -14,13 +14,6 @@ from api.settings import settings
 
 class VodUnavailable(RuntimeError):
     """The VOD service didn't answer."""
-
-
-@dataclass(frozen=True, slots=True)
-class VodRef:
-    id: int
-    url: str
-    created: bool
 
 
 class VodClient:
@@ -45,20 +38,6 @@ class VodClient:
         if self._channel is None:
             self._channel = grpc.aio.insecure_channel(self._target)
         return vod_pb2_grpc.VodServiceStub(self._channel)
-
-    async def create(
-        self, playlist_url: str, title: str | None = None, poster: str | None = None
-    ) -> VodRef:
-        """Register a playlist and get back the id we'll store. Idempotent."""
-        request = vod_pb2.CreateVodRequest(
-            playlist_url=playlist_url,
-            metadata=vod_pb2.Metadata(title=title, poster=poster),
-        )
-        try:
-            response = await self._stub.CreateVod(request)
-        except grpc.aio.AioRpcError as exc:
-            raise VodUnavailable(f"{self._target}: {exc.details() or exc.code().name}") from exc
-        return VodRef(id=response.vod.id, url=response.vod.url, created=response.created)
 
     async def get(self, vod_id: int) -> vod_pb2.Vod | None:
         try:

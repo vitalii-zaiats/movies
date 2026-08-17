@@ -1,21 +1,17 @@
 [project]
-name = "vod"
+name = "seeder"
 version = "0.1.0"
-description = "VOD microservice — owns playlists, speaks gRPC, serves index.m3u8"
+description = "Loads crawled episodes into the VOD service and the catalogue"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "contracts",
-    "fastapi>=0.115",
     "grpcio>=1.68",
     "httpx>=0.28",
-    "uvicorn>=0.32",
 ]
 
 [project.scripts]
-vod = "vod.__main__:main"
-# Storage is prepared before the service runs, never by it.
-vod-init = "vod.schema:main"
+seed-catalogue = "seeder.__main__:main"
 
 [tool.uv.sources]
 contracts = { workspace = true }

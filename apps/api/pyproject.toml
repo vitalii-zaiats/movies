@@ -17,7 +17,6 @@ dependencies = [
 
 [project.scripts]
 api = "api.__main__:main"
-api-seed = "api.seed:main"
 
 [tool.uv.sources]
 contracts = { workspace = true }

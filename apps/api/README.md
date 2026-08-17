@@ -45,25 +45,37 @@ and in what order, which is exactly what a screen needs to auto-advance.
 the queue would stall auto-next. Positions are dense and 0-based, rewritten on
 every mutation, so the display can walk them by index.
 
-## Seeding
+## Layers
 
-```bash
-uv run api-seed data/family-guy-streams.jsonl
+```
+main.py / playlists.py   routes: request in, DTO out — no queries, no decisions
+services.py              what the API does: rules, ordering, ingest, commits
+repositories.py          every SQL query in the API, each written once
+models.py                the schema
 ```
 
-Takes the output of `resolve-episodes`, keeps records with **exactly one**
-stream (zero means nothing was found, more than one is a choice nobody has made
-yet), registers each playlist with the VOD service over gRPC, and stores the
-metadata with the id it gets back.
+Services raise `NotFound` / `Conflict` / `Invalid` from `errors.py`; one handler
+in `main.py` turns those into 404 / 409 / 400. That's why nothing below the
+route layer imports FastAPI — a service can be called from a script or a test
+without pretending to be a request.
 
-Both halves are idempotent — VODs are keyed by playlist URL, episodes by source
-URL — so re-running it updates instead of duplicating.
+## Getting data in
+
+The API doesn't crawl and it doesn't seed. Whoever found a stream registers it
+with the VOD service and then posts the episode here:
+
+```
+POST /ingest/episodes   {"items": [{show_key, title, season, episode, source_url, vod_id, …}]}
+```
+
+That's [`apps/seeder`](../seeder). Upserts on `source_url`, so re-sending is
+safe.
 
 ## Talking to the VOD service
 
-Only over the gRPC contract in [`contracts`](../../packages/contracts): no
-cross-service imports, no shared database. `api.vod_client.VodClient` is the
-whole surface.
+Read-only, over the gRPC contract in [`contracts`](../../packages/contracts).
+`api.vod_client.VodClient` has `get` and no `create` — registering a VOD is the
+crawler side's job, and leaving the method out is what keeps that true.
 
 ## Migrations
 

@@ -11,10 +11,17 @@ Two faces, one process:
 - **HTTP** (`:8030`) — what a player talks to: `http://vod.localhost:8030/1`.
 
 ```bash
+uv run vod-init       # prepare the database — once, before the service runs
 uv run proxy          # required: playlists only go out through it
 uv run vod            # grpc :50051, http :8030
-uv run vod --db data/vod.db --public-url http://vod.localhost:8030
+uv run vod --db data/vod.db --public-url /vod
 ```
+
+The service **will not create its own schema**. Started against a database
+nobody prepared it exits with a message telling you to run `vod-init`, rather
+than coming up healthy on an empty file it made itself. In compose that's a
+one-shot `vod-init` service the `vod` service waits on; on a real host it's a
+deploy step like any migration.
 
 ## HTTP
 
