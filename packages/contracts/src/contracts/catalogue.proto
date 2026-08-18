@@ -1,0 +1,481 @@
+syntax = "proto3";
+
+// The catalogue, for clients that would rather not speak HTTP.
+//
+// This is a second presentation layer over the same services `apps/api` serves
+// REST from — not a second API. Every RPC here lands on a method in
+// `api.core.services`, which is where the decisions are; if the two layers ever
+// disagree about what something means, one of them is calling the wrong method.
+//
+// What is deliberately *not* here: ingest, VOD sync, media upload and the
+// section editor. Those are one machine talking to another, or an admin at a
+// desk with a file picker — both are happy with JSON over HTTP, and neither is
+// what a phone does.
+package catalogue.v1;
+
+// ---------------------------------------------------------------------------
+// Identity
+//
+// There are no cookies in gRPC, so the token is the whole story: send it as
+// `authorization: Bearer <token>` metadata on every call. A call that needs
+// somebody and was given nobody mints a guest — exactly as the HTTP layer does
+// — and hands the new token back in the `x-session-token` initial metadata, so
+// a client can keep it without knowing which RPC created it.
+// ---------------------------------------------------------------------------
+
+message User {
+  // The outside world knows a user by this, never by the row id.
+  string public_id = 1;
+  string display_name = 2;
+  optional string email = 3;
+  Role role = 4;
+  // No email and no password: real, and only reachable from this device.
+  bool is_guest = 5;
+  string created_at = 6;
+  string last_seen_at = 7;
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_USER = 1;
+  ROLE_ADMIN = 2;
+}
+
+// A user together with the token that proves it. Handed out when a session is
+// created and never again — keeping it is the client's job.
+message Identity {
+  string token = 1;
+  User user = 2;
+}
+
+service Accounts {
+  // Who am I — minting a guest if the answer would have been nobody.
+  rpc WhoAmI(WhoAmIRequest) returns (Identity);
+  // A *new* guest, even if the caller already had one. That's what makes it
+  // usable as "watch as someone else on the shared TV".
+  rpc StartGuest(StartGuestRequest) returns (Identity);
+  // Keep the account, add the login: the guest row gains an email and a
+  // password, so nothing watched so far is lost.
+  rpc Claim(ClaimRequest) returns (Identity);
+  rpc Login(LoginRequest) returns (Identity);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc Rename(RenameRequest) returns (User);
+}
+
+message WhoAmIRequest {}
+
+message StartGuestRequest {}
+
+message ClaimRequest {
+  string email = 1;
+  string password = 2;
+  optional string display_name = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+message RenameRequest {
+  string display_name = 1;
+}
+
+// ---------------------------------------------------------------------------
+// The catalogue itself
+// ---------------------------------------------------------------------------
+
+// Ids are 32-bit throughout this contract. There are seven thousand shows here,
+// not four billion, and 64-bit ids reach a Dart client as `Int64` from `fixnum`
+// rather than as a plain `int` — a conversion at every call site, bought with
+// headroom nothing will ever use.
+message Show {
+  uint32 id = 1;
+  string key = 2;
+  string title = 3;
+  optional string poster = 4;
+  string created_at = 5;
+  // One episode and no more — so a client knows to stop saying "S01E01" about
+  // something that only ever had one.
+  bool is_film = 6;
+}
+
+// A show in a browse list: how much of it is here, counted by the server.
+message ShowSummary {
+  Show show = 1;
+  uint32 episode_count = 2;
+  uint32 playable_count = 3;
+}
+
+// Everything the crawl knew. Kept off `Show` on purpose: that one rides along
+// inside every episode of every listing, and a synopsis per row is a page of
+// prose nobody asked for.
+message ShowDetails {
+  Show show = 1;
+  optional string original_title = 2;
+  optional string kind = 3;
+  optional uint32 year = 4;
+  optional uint32 year_end = 5;
+  optional string audio = 6;
+  optional string quality = 7;
+  optional string description = 8;
+  optional string duration = 9;
+  optional string age_rating = 10;
+  repeated string genres = 11;
+  repeated string countries = 12;
+  repeated string directors = 13;
+  repeated string starring = 14;
+  optional string imdb_id = 15;
+  optional double imdb_rating = 16;
+  optional uint32 imdb_votes = 17;
+  optional string imdb_url = 18;
+}
+
+// One way to hear an episode. More than one means somebody dubbed it twice.
+message Track {
+  uint32 vod_id = 1;
+  optional string audio = 2;
+  string playlist = 3;
+}
+
+message Episode {
+  uint32 id = 1;
+  uint32 season = 2;
+  uint32 episode = 3;
+  // Set when two aired as one — "13-14".
+  optional uint32 episode_end = 4;
+  string title = 5;
+  optional string poster = 6;
+  string source_url = 7;
+  optional uint32 vod_id = 8;
+  optional string vod_url = 9;
+  // `{vod_url}/index.m3u8` — the only URL a player needs. Ours, never the
+  // origin's. Absent until something has been seeded for this episode.
+  optional string playlist = 10;
+  repeated Track tracks = 11;
+}
+
+message EpisodeWithShow {
+  Episode episode = 1;
+  Show show = 2;
+}
+
+message ShowWithEpisodes {
+  ShowDetails show = 1;
+  repeated Episode episodes = 2;
+}
+
+// The envelope every listing uses, so paging looks the same everywhere.
+//
+// `PageInfo` rather than `Page`, and `PlaylistVisibility` rather than
+// `Visibility`, because both of those are Flutter's names for something else —
+// a generated Dart client would collide with `material.dart` on the first
+// screen that drew a list.
+message PageInfo {
+  uint32 total = 1;
+  uint32 limit = 2;
+  uint32 offset = 3;
+}
+
+service Catalogue {
+  rpc Health(HealthRequest) returns (HealthResponse);
+  rpc ListShows(ListShowsRequest) returns (ListShowsResponse);
+  // Everything on one show's page: what the crawl knew, plus its episodes.
+  rpc GetShow(GetShowRequest) returns (ShowWithEpisodes);
+  // The whole catalogue, a show at a time.
+  //
+  // Paging exists because a browse screen wants a screenful; this exists
+  // because a phone that wants to search offline wants all eight thousand, and
+  // asking for them 50 at a time is 160 round trips. One call, one stream, and
+  // the client can draw the first rows before the last ones are read.
+  rpc StreamShows(StreamShowsRequest) returns (stream ShowSummary);
+  rpc ListEpisodes(ListEpisodesRequest) returns (ListEpisodesResponse);
+  rpc GetEpisode(GetEpisodeRequest) returns (EpisodeWithShow);
+  // The front page, as a person arranged it. One call for the whole screen.
+  rpc GetHome(GetHomeRequest) returns (Home);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  uint32 shows = 2;
+  uint32 episodes = 3;
+}
+
+enum ShowOrder {
+  // By key, which is what the REST layer defaults to.
+  SHOW_ORDER_UNSPECIFIED = 0;
+  SHOW_ORDER_KEY = 1;
+  SHOW_ORDER_ADDED = 2;
+  SHOW_ORDER_TITLE = 3;
+  // By release year — the fact — rather than by when a row was synced, which a
+  // bulk rebuild makes meaningless.
+  SHOW_ORDER_NEWEST = 4;
+  SHOW_ORDER_OLDEST = 5;
+}
+
+message ListShowsRequest {
+  // Substring of the title.
+  optional string q = 1;
+  // True: several episodes. False: exactly one, which is how a film looks.
+  optional bool series = 2;
+  ShowOrder order = 3;
+  uint32 limit = 4;
+  uint32 offset = 5;
+}
+
+message ListShowsResponse {
+  PageInfo page = 1;
+  repeated ShowSummary items = 2;
+}
+
+message StreamShowsRequest {
+  optional string q = 1;
+  optional bool series = 2;
+  ShowOrder order = 3;
+  // Stop after this many. Zero means the whole catalogue.
+  uint32 limit = 4;
+}
+
+message GetShowRequest {
+  string key = 1;
+}
+
+message ListEpisodesRequest {
+  optional string show = 1;
+  optional uint32 season = 2;
+  optional string q = 3;
+  // Only the ones with a VOD behind them.
+  optional bool playable = 4;
+  uint32 limit = 5;
+  uint32 offset = 6;
+}
+
+message ListEpisodesResponse {
+  PageInfo page = 1;
+  repeated EpisodeWithShow items = 2;
+}
+
+message GetEpisodeRequest {
+  uint32 id = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Home
+// ---------------------------------------------------------------------------
+
+enum SectionKind {
+  SECTION_KIND_UNSPECIFIED = 0;
+  SECTION_KIND_HERO = 1;
+  SECTION_KIND_RAIL = 2;
+  SECTION_KIND_GRID = 3;
+  // Artwork and a link, with no episodes under it.
+  SECTION_KIND_BANNER = 4;
+}
+
+message HomeSection {
+  uint32 id = 1;
+  SectionKind kind = 2;
+  string title = 3;
+  optional string kicker = 4;
+  optional string link = 5;
+  optional Show show = 6;
+  optional Playlist playlist = 7;
+  // placement (`hero`, `tile`, `poster`, `square`, `logo`) → URL, already
+  // merged: the section's own picture wins over the one belonging to whatever
+  // it points at.
+  map<string, string> artwork = 8;
+  repeated EpisodeWithShow items = 9;
+}
+
+message Home {
+  repeated HomeSection sections = 1;
+}
+
+message GetHomeRequest {
+  // Admins only: include the sections that aren't published yet.
+  bool preview = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Watching: progress and history
+// ---------------------------------------------------------------------------
+
+message Progress {
+  uint32 episode_id = 1;
+  double position_seconds = 2;
+  optional double duration_seconds = 3;
+  bool completed = 4;
+  // How far in, 0–1. Absent until a duration is known.
+  optional double ratio = 5;
+  string last_watched_at = 6;
+}
+
+message HistoryEntry {
+  Progress progress = 1;
+  EpisodeWithShow episode = 2;
+}
+
+service Watching {
+  // The player checking in. Sent often — keep it small.
+  rpc ReportProgress(ReportProgressRequest) returns (Progress);
+  // Where to seek to when the player opens. NOT_FOUND means "start at zero".
+  rpc GetProgress(GetProgressRequest) returns (Progress);
+  rpc ForgetProgress(ForgetProgressRequest) returns (ForgetProgressResponse);
+  rpc ListHistory(ListHistoryRequest) returns (ListHistoryResponse);
+  // Started, not finished, newest first — the rail on the home screen.
+  rpc ContinueWatching(ContinueWatchingRequest) returns (ContinueWatchingResponse);
+}
+
+message ReportProgressRequest {
+  uint32 episode_id = 1;
+  double position_seconds = 2;
+  optional double duration_seconds = 3;
+  // Leave it out and the 95% rule decides. Send it when the player *knows*,
+  // because "the video element fired `ended`" beats any threshold.
+  optional bool completed = 4;
+}
+
+message GetProgressRequest {
+  uint32 episode_id = 1;
+}
+
+message ForgetProgressRequest {
+  uint32 episode_id = 1;
+}
+
+message ForgetProgressResponse {}
+
+message ListHistoryRequest {
+  // Only finished, or only not.
+  optional bool completed = 1;
+  uint32 limit = 2;
+  uint32 offset = 3;
+}
+
+message ListHistoryResponse {
+  PageInfo page = 1;
+  repeated HistoryEntry items = 2;
+}
+
+message ContinueWatchingRequest {
+  uint32 limit = 1;
+}
+
+message ContinueWatchingResponse {
+  repeated HistoryEntry items = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Playlists
+// ---------------------------------------------------------------------------
+
+enum PlaylistVisibility {
+  PLAYLIST_VISIBILITY_UNSPECIFIED = 0;
+  PLAYLIST_VISIBILITY_PRIVATE = 1;
+  // An editorial act, not a sharing one: the whole install sees it, so only an
+  // admin can make one.
+  PLAYLIST_VISIBILITY_PUBLIC = 2;
+}
+
+message Playlist {
+  uint32 id = 1;
+  string name = 2;
+  PlaylistVisibility visibility = 3;
+  string created_at = 4;
+  uint32 count = 5;
+  // Whether *this* caller may change it. Not a permission the client enforces
+  // — the service does that — but the answer it needs to decide whether to draw
+  // the controls at all.
+  bool mine = 6;
+}
+
+message PlaylistItem {
+  uint32 id = 1;
+  // Dense and 0-based; the server rewrites it on every mutation.
+  uint32 position = 2;
+  EpisodeWithShow episode = 3;
+}
+
+message PlaylistDetail {
+  Playlist playlist = 1;
+  repeated PlaylistItem items = 2;
+}
+
+enum PlaylistScope {
+  // Yours plus whatever is published.
+  PLAYLIST_SCOPE_UNSPECIFIED = 0;
+  PLAYLIST_SCOPE_VISIBLE = 1;
+  PLAYLIST_SCOPE_MINE = 2;
+  PLAYLIST_SCOPE_PUBLIC = 3;
+}
+
+service Playlists {
+  rpc ListPlaylists(ListPlaylistsRequest) returns (ListPlaylistsResponse);
+  rpc GetPlaylist(GetPlaylistRequest) returns (PlaylistDetail);
+  rpc CreatePlaylist(CreatePlaylistRequest) returns (PlaylistDetail);
+  // A season, or a whole show, in one call.
+  rpc CreateFromShow(CreateFromShowRequest) returns (PlaylistDetail);
+  rpc UpdatePlaylist(UpdatePlaylistRequest) returns (PlaylistDetail);
+  rpc DeletePlaylist(DeletePlaylistRequest) returns (DeletePlaylistResponse);
+  rpc AddItem(AddItemRequest) returns (PlaylistDetail);
+  rpc RemoveItem(RemoveItemRequest) returns (PlaylistDetail);
+  rpc Reorder(ReorderRequest) returns (PlaylistDetail);
+}
+
+message ListPlaylistsRequest {
+  PlaylistScope scope = 1;
+}
+
+message ListPlaylistsResponse {
+  repeated Playlist items = 1;
+}
+
+message GetPlaylistRequest {
+  uint32 id = 1;
+}
+
+message CreatePlaylistRequest {
+  string name = 1;
+}
+
+message CreateFromShowRequest {
+  string show = 1;
+  optional uint32 season = 2;
+  optional string name = 3;
+  // Episodes without a VOD can't be played; keeping them would break auto-next.
+  bool playable_only = 4;
+}
+
+// Anything not sent is left alone.
+message UpdatePlaylistRequest {
+  uint32 id = 1;
+  optional string name = 2;
+  optional PlaylistVisibility visibility = 3;
+}
+
+message DeletePlaylistRequest {
+  uint32 id = 1;
+}
+
+message DeletePlaylistResponse {}
+
+message AddItemRequest {
+  uint32 playlist_id = 1;
+  uint32 episode_id = 2;
+}
+
+message RemoveItemRequest {
+  uint32 playlist_id = 1;
+  uint32 item_id = 2;
+}
+
+message ReorderRequest {
+  uint32 playlist_id = 1;
+  repeated uint32 item_ids = 2;
+}

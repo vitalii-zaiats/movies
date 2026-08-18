@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What the Android TV launcher draws for this app: 320×180, and required for
+     a leanback launcher entry to appear at all. Drawn rather than shipped as a
+     PNG so it stays legible at whatever the launcher scales it to. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:startColor="#1A1412"
+                android:endColor="#3A1B10" />
+        </shape>
+    </item>
+    <item
+        android:gravity="center"
+        android:width="200dp"
+        android:height="8dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#E0552B" />
+        </shape>
+    </item>
+</layer-list>

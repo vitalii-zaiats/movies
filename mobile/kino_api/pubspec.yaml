@@ -1,0 +1,27 @@
+name: kino_api
+description: The catalogue, over gRPC — the client half of packages/contracts/catalogue.proto.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The transport and the wire format. Both are pinned by what
+  # `protoc-gen-dart` generates against — see lib/src/generated.
+  grpc: ^5.1.0
+  protobuf: ^6.0.0
+  fixnum: ^1.1.1
+  # Where a guest token survives being closed and reopened. Without it the app
+  # is a new person every launch, which is a strange thing for a history to be.
+  shared_preferences: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:

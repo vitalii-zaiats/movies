@@ -1,0 +1,29 @@
+name: kino_app
+description: The catalogue on a phone — a small Flutter app over kino_api.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The whole API surface. A path dependency because the two are one repo and
+  # the contract they share is regenerated for both at once.
+  kino_api:
+    path: ../kino_api
+  # HLS is what the VOD service hands out, and ExoPlayer reads it natively.
+  video_player: ^2.9.2
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # The tests run a real server in-process, which means the server half of the
+  # same package the client half comes from.
+  grpc: ^5.1.0
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

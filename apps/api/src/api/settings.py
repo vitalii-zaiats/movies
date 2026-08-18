@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     vod_base: str = "/vod"
     host: str = "127.0.0.1"
     port: int = 8020
+    # The other presentation layer, in its own process — see `api.rpc`. A port
+    # of its own rather than a path on the first one: gRPC wants the whole
+    # connection, and nginx would have to be taught h2c to share it.
+    grpc_host: str = "127.0.0.1"
+    grpc_port: int = 50061
 
     # Who may call this from another origin. The default is the wildcard, and
     # the wildcard deliberately means *no cookies* — see `main.create_app`.

@@ -10,6 +10,7 @@ dependencies = [
     "contracts",
     "fastapi>=0.115",
     "grpcio>=1.68",
+    "grpcio-reflection>=1.68",
     "pydantic[email]>=2.9",
     "pydantic-settings>=2.6",
     "python-multipart>=0.0.9",
@@ -20,6 +21,7 @@ dependencies = [
 [project.scripts]
 api = "api.__main__:main"
 api-admin = "api.cli:main"
+api-grpc = "api.rpc.__main__:main"
 
 [tool.uv.sources]
 contracts = { workspace = true }
