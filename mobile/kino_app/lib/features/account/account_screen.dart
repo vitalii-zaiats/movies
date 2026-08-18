@@ -15,6 +15,7 @@ import '../../core/async_value.dart';
 import '../../core/formatting.dart';
 import '../../core/kino.dart';
 import '../../core/theme.dart';
+import '../../widgets/glyph.dart';
 import '../../widgets/section_head.dart';
 import '../../widgets/states.dart';
 import 'account_view_model.dart';
@@ -260,7 +261,7 @@ class _ClaimFormState extends State<_ClaimForm> {
               decoration: InputDecoration(
                 labelText: 'Password',
                 suffixIcon: IconButton(
-                  icon: Icon(_hidden ? Icons.visibility : Icons.visibility_off, size: 18),
+                  icon: Glyph(_hidden ? Glyphs.eye : Glyphs.eyeShut, size: 18),
                   onPressed: () => setState(() => _hidden = !_hidden),
                 ),
               ),
@@ -409,7 +410,7 @@ class _Actions extends StatelessWidget {
       children: [
         if (!user.isGuest)
           ListTile(
-            leading: const Icon(Icons.logout),
+            leading: const Glyph(Glyphs.out),
             title: const Text('Sign out'),
             subtitle: Text(
               'Back to being a guest on this device.',
@@ -418,7 +419,7 @@ class _Actions extends StatelessWidget {
             onTap: model.busy ? null : model.logout,
           ),
         ListTile(
-          leading: const Icon(Icons.person_add_alt),
+          leading: const Glyph(Glyphs.newPerson),
           title: const Text('Watch as somebody else'),
           subtitle: Text(
             'A second identity on this device, with its own history.',

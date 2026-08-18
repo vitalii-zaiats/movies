@@ -20,7 +20,7 @@ Two addresses because there are two: gRPC has a port of its own, and the server
 hands out paths (`/vod/7455/index.m3u8`) rather than URLs, since it has no idea
 what address the phone reached it on.
 
-## Three screens
+## Four screens
 
 **Home** becomes somebody first — `whoAmI` mints a guest server-side and the
 token is kept on the device, so "continue watching" has something to be about
@@ -31,8 +31,36 @@ catalogue paged as you scroll.
 runtime, age rating, genres as language-neutral keys, the synopsis, and every
 episode with a note against the ones that were never packaged.
 
-**Player** opens where it was left, reports its position every ten seconds and
-on the way out, and offers the voices when a source published more than one dub.
+**Player** takes the whole screen, sideways: its own transport, a scrubber, the
+voices when a source published more than one dub, and chrome that leaves after
+four seconds — though not while paused, because nobody pauses in order to look
+at the picture. It opens where it was left and reports its position every ten
+seconds and on the way out.
+
+Leaving it puts the device back upright. `DeviceOrientation.values` alone does
+not do that — it *allows* every orientation, and a screen already sideways has
+no reason to turn back — so portrait is asked for first and everything is
+allowed again a moment later.
+
+**Account** is who you are and how to stop being a guest. Registering is
+`claim`: an email and a password written onto the row you already are, so
+nothing watched so far is lost. Also sign-in from another device, sign-out, a
+second guest for the shared TV, and the light/dark choice.
+
+## Icons, and the two themes
+
+The icons are drawn rather than imported — see `widgets/glyph.dart`. Material's
+are rounded and soft-capped, which is a good set and the wrong one beside square
+corners, hairline rules and a display face at 800; and the obvious replacements
+(Lucide, Feather, Phosphor) all cap their strokes round too. These are the
+fifteen this app uses, on a 24-unit grid, stroked at 2 with square caps and
+mitred joins.
+
+Dark mode is not an invention either. `frontend` already describes a dark
+surface — `--color-ink*`, and the `.on-ink` rules that lighten the accent,
+because `#ec3013` on ink reads as maroon. Dark is that mode applied to the whole
+page rather than to a caption. `System` follows the phone; the choice is kept
+between launches.
 
 ## Android TV
 
@@ -46,14 +74,14 @@ whatever is focused has to *look* focused.
 - The manifest declares `leanback` and `touchscreen` as `required="false"`. The
   second matters more than it looks: a TV has no touchscreen, and that feature
   defaults to required, which alone is enough to hide an app from a TV.
-- In the player, OK is play/pause, ◀ ▶ seek ten seconds, and Back leaves. The
-  floating button is hidden there — a button nobody can reach is worse than no
-  button.
+- In the player, OK is play/pause, ◀ ▶ seek ten seconds, and Back leaves —
+  the same three actions the on-screen transport has, so there is one player
+  rather than a second one written for televisions.
 
-Verified on a phone emulator, end to end: guest, browse, play, and the film
-reappearing under "continue watching". **Not** verified on a television — the TV
-emulator wouldn't start here, and none of the leanback path has been seen
-running.
+Verified on a phone emulator and an iPhone simulator: guest minted, catalogue
+browsed and paged, a film played, and it reappearing under "continue watching"
+afterwards. **Not** verified on a television — the TV emulator wouldn't start
+here, so none of the leanback path has been seen running.
 
 ```bash
 flutter test        # boots the app against a gRPC server in the same process

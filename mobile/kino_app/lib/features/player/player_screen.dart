@@ -22,6 +22,7 @@ import 'package:video_player/video_player.dart';
 import '../../core/formatting.dart';
 import '../../core/kino.dart';
 import '../../core/theme.dart';
+import '../../widgets/glyph.dart';
 
 /// How often a position is worth writing down. Ten seconds of lost place is
 /// nothing; a request per frame is not.
@@ -86,11 +87,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _report();
     _player?.dispose();
 
-    if (!_tv) {
-      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
+    if (!_tv) _standUpAgain();
     super.dispose();
+  }
+
+  /// Put the device back upright, and leave it there.
+  ///
+  /// Two ways of getting this wrong, both tried. `DeviceOrientation.values`
+  /// *allows* every orientation rather than asking for one, and a screen
+  /// already sideways has no reason to turn back. Asking for portrait and then
+  /// relaxing to `values` a moment later is the same bug with a delay: on
+  /// Android "unspecified" with auto-rotate off means "stay as you are", so the
+  /// relax undoes the request as soon as it lands.
+  ///
+  /// So portrait is asked for and kept. Every screen but this one is a list, and
+  /// none of them wants to be sideways.
+  void _standUpAgain() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
   Future<void> _open({Track? voice}) async {
@@ -331,7 +345,7 @@ class _Back extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SafeArea(
         child: IconButton(
-          icon: const Icon(Icons.arrow_back, color: paper),
+          icon: const Glyph(Glyphs.back, color: paper),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       );
@@ -416,7 +430,7 @@ class _Chrome extends StatelessWidget {
                     ),
                     if (dubs.length > 1)
                       PopupMenuButton<Track>(
-                        icon: const Icon(Icons.record_voice_over_outlined, color: paper),
+                        icon: const Glyph(Glyphs.voice, color: paper),
                         tooltip: 'Voice',
                         onSelected: onVoice,
                         itemBuilder: (context) => [
@@ -425,10 +439,10 @@ class _Chrome extends StatelessWidget {
                               value: track,
                               child: Row(
                                 children: [
-                                  Icon(
+                                  Glyph(
                                     track.vodId == voice?.vodId
-                                        ? Icons.check
-                                        : Icons.circle_outlined,
+                                        ? Glyphs.check
+                                        : Glyphs.dot,
                                     size: 16,
                                     color: track.vodId == voice?.vodId ? accent500 : neutral500,
                                   ),
@@ -446,15 +460,15 @@ class _Chrome extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _Key(icon: Icons.replay_10, onTap: () => onSkip(-_step)),
+                      _Key(glyph: Glyphs.rewind, onTap: () => onSkip(-_step)),
                       const SizedBox(width: 28),
                       _Key(
-                        icon: value.isPlaying ? Icons.pause : Icons.play_arrow,
+                        glyph: value.isPlaying ? Glyphs.pause : Glyphs.play,
                         big: true,
                         onTap: onToggle,
                       ),
                       const SizedBox(width: 28),
-                      _Key(icon: Icons.forward_10, onTap: () => onSkip(_step)),
+                      _Key(glyph: Glyphs.forward, onTap: () => onSkip(_step)),
                     ],
                   ),
                 ),
@@ -508,9 +522,9 @@ class _Chrome extends StatelessWidget {
 /// Square, like everything else here — only the size changes between "the main
 /// thing" and "the other two".
 class _Key extends StatelessWidget {
-  const _Key({required this.icon, required this.onTap, this.big = false});
+  const _Key({required this.glyph, required this.onTap, this.big = false});
 
-  final IconData icon;
+  final GlyphSpec glyph;
   final VoidCallback onTap;
   final bool big;
 
@@ -526,7 +540,9 @@ class _Key extends StatelessWidget {
         child: SizedBox(
           width: size,
           height: size,
-          child: Icon(icon, color: paper, size: big ? 34 : 24),
+          // Heavier over video: a two-pixel line vanishes against a bright
+          // scene, and this is the one control that must never be hunted for.
+          child: Glyph(glyph, color: paper, size: big ? 30 : 22, weight: 2.5),
         ),
       ),
     );

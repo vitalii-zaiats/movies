@@ -7,6 +7,7 @@ import 'package:kino_api/kino_api.dart';
 import '../../core/formatting.dart';
 import '../../core/kino.dart';
 import '../../core/theme.dart';
+import '../../widgets/glyph.dart';
 import '../../widgets/poster.dart';
 import '../../widgets/section_head.dart';
 import '../../widgets/states.dart';
@@ -130,11 +131,14 @@ class _SearchBar extends StatelessWidget {
               onSubmitted: model.search,
               decoration: InputDecoration(
                 hintText: 'Search titles',
-                prefixIcon: const Icon(Icons.search, size: 20),
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Glyph(Glyphs.search, size: 18),
+                ),
                 suffixIcon: model.query.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(Icons.close, size: 18),
+                        icon: const Glyph(Glyphs.close, size: 16),
                         onPressed: () {
                           controller.clear();
                           model.search('');
@@ -215,6 +219,10 @@ class _ContinueRail extends StatelessWidget {
                     ),
                   ),
                   child: Column(
+                    // `min` with a `Flexible` title: the tile takes the height
+                    // it needs and the bar sits under the words, while the
+                    // reserved height above still guarantees it can't overflow.
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Poster(
@@ -223,7 +231,7 @@ class _ContinueRail extends StatelessWidget {
                         width: _posterWidth,
                       ),
                       const SizedBox(height: 8),
-                      Expanded(
+                      Flexible(
                         child: Text(
                           show.title,
                           maxLines: 2,

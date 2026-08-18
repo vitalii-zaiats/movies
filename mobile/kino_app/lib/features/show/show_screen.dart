@@ -12,6 +12,7 @@ import '../../core/async_value.dart';
 import '../../core/formatting.dart';
 import '../../core/kino.dart';
 import '../../core/theme.dart';
+import '../../widgets/glyph.dart';
 import '../../widgets/poster.dart';
 import '../../widgets/states.dart';
 import '../player/player_screen.dart';
@@ -62,7 +63,7 @@ class _ShowScreenState extends State<ShowScreen> {
               if (detail != null && detail.episodes.length > 1)
                 IconButton(
                   tooltip: 'Queue the whole show',
-                  icon: const Icon(Icons.playlist_add),
+                  icon: const Glyph(Glyphs.queue),
                   onPressed: _queue,
                 ),
             ],
@@ -184,7 +185,7 @@ class _PlayAction extends StatelessWidget {
     if (playable.isEmpty) {
       return Row(
         children: [
-          Icon(Icons.block, size: 18, color: palette.faint),
+          Glyph(Glyphs.blocked, size: 18, color: palette.faint),
           const SizedBox(width: 8),
           Text('NOTHING TO PLAY YET', style: label(color: palette.faint)),
         ],
@@ -201,7 +202,7 @@ class _PlayAction extends StatelessWidget {
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => PlayerScreen(episode: first, show: show)),
         ),
-        icon: const Icon(Icons.play_arrow),
+        icon: const Glyph(Glyphs.play, size: 18),
         label: Text(code == null ? 'PLAY' : 'PLAY $code'),
       ),
     );
@@ -226,7 +227,7 @@ class _EpisodeRow extends StatelessWidget {
       dense: true,
       enabled: playable,
       leading: code == null
-          ? const Icon(Icons.movie_outlined)
+          ? const Glyph(Glyphs.film)
           : SizedBox(
               width: 62,
               child: Text(code, style: body(13, weight: 700, color: palette.muted)),
@@ -238,7 +239,7 @@ class _EpisodeRow extends StatelessWidget {
           Text('$dubs VOICES', style: body(11, weight: 600, color: palette.muted)),
         _ => null,
       },
-      trailing: playable ? const Icon(Icons.play_arrow) : null,
+      trailing: playable ? const Glyph(Glyphs.play, size: 16) : null,
       onTap: playable
           ? () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
