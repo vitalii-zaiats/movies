@@ -365,6 +365,98 @@ A new module means a new line in `core/registry.py`. A model class nobody
 imported isn't in `Base.metadata`, and autogenerate reports that as "drop this
 table" rather than as a mistake.
 
+## The same catalogue over gRPC
+
+There are two presentation layers and one set of decisions. `src/api/rpc/`
+serves [`catalogue.v1`](../../packages/contracts/src/contracts/catalogue.proto)
+— shows, episodes, the home screen, identity, progress and playlists — and
+every method does what a route does: open a session, build the graph from
+`core/services.py`, call one method on it, turn the answer into a message.
+
+```bash
+uv run api-grpc                       # :50061
+grpcurl -plaintext 127.0.0.1:50061 list
+grpcurl -plaintext 127.0.0.1:50061 catalogue.v1.Catalogue/Health
+```
+
+Reflection is on, which is what makes those two commands work at all — it's
+this port's answer to the OpenAPI page the HTTP one gets for free.
+
+What stays on HTTP: ingest, VOD sync, media upload and the section editor.
+Those are one machine talking to another, or an admin with a file picker.
+
+Identity travels as metadata rather than a cookie, because gRPC has none:
+
+```
+authorization: bearer <token>     inbound, every call
+x-session-token: <token>          outbound, when this call created the session
+```
+
+A call that needs somebody and was given nobody mints a guest — the same rule
+`CurrentUser` follows — and the new token rides back in the initial metadata, so
+a client never has to know which RPC created it.
+
+Refusals become status codes in one place, `rpc/errors.py`, exactly as
+`main.py` does it for HTTP:
+
+| raised        | HTTP | gRPC                |
+|---------------|------|---------------------|
+| `NotFound`    | 404  | `NOT_FOUND`         |
+| `Conflict`    | 409  | `ALREADY_EXISTS`    |
+| `Invalid`     | 400  | `INVALID_ARGUMENT`  |
+| `Unauthorized`| 401  | `UNAUTHENTICATED`   |
+| `Forbidden`   | 403  | `PERMISSION_DENIED` |
+
+### TLS
+
+Unset, the port is plaintext — which is correct behind nginx, where the hop
+from it is inside a compose network. Set both halves and it isn't:
+
+```bash
+API_GRPC_TLS_CERT=/certs/cert.pem API_GRPC_TLS_KEY=/certs/key.pem uv run api-grpc
+# grpc on 127.0.0.1:50061 (tls)
+```
+
+Half a pair is refused rather than ignored: a typo that silently downgrades a
+port to plaintext is the worst outcome available. `API_GRPC_TLS_CLIENT_CA`
+turns on mutual TLS — the door then opens only for a device holding a
+certificate signed by that CA, *on top of* the session token rather than
+instead of it.
+
+A self-signed certificate has to name every address a client will dial, or the
+handshake fails on a name it never claimed:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+  -keyout key.pem -out cert.pem -subj "/CN=kino.local" \
+  -addext "subjectAltName=DNS:kino.local,IP:192.168.0.10"
+```
+
+The client then has to trust it — see [`mobile/kino_api`](../../mobile/kino_api),
+which takes the CA's bytes rather than asking Android to trust it everywhere.
+
+The other way is to let nginx do it, which is one certificate for the whole
+stack instead of one per service. gRPC paths are `/package.Service/Method`, so
+a prefix is enough to tell them from the app's own routes:
+
+```nginx
+server {
+    listen 443 ssl;
+    http2 on;                       # gRPC is HTTP/2 and nothing else
+
+    ssl_certificate     /etc/letsencrypt/live/kino/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kino/privkey.pem;
+
+    location /catalogue.v1. {
+        grpc_pass grpc://api-grpc:50061;
+    }
+
+    location / {
+        proxy_pass http://web:8080;
+    }
+}
+```
+
 ## Configuration
 
 All prefixed `API_`.
@@ -374,6 +466,11 @@ All prefixed `API_`.
 | `API_DATABASE_URL`       | `postgresql+asyncpg://kino:kino@127.0.0.1:5432/kino` |                                        |
 | `API_VOD_GRPC_TARGET`    | `127.0.0.1:50051`                                    |                                        |
 | `API_VOD_BASE`           | `/vod`                                               | where a browser reaches the VOD service |
+| `API_GRPC_HOST`          | `127.0.0.1`                                          | the gRPC port — see above               |
+| `API_GRPC_PORT`          | `50061`                                              |                                        |
+| `API_GRPC_TLS_CERT`      | unset                                                | PEM; with the key, the port is TLS      |
+| `API_GRPC_TLS_KEY`       | unset                                                | PEM                                     |
+| `API_GRPC_TLS_CLIENT_CA` | unset                                                | set it and clients need a certificate too |
 | `API_CORS_ORIGINS`       | `["*"]`                                              | wildcard = no cookies; name origins to allow them |
 | `API_SESSION_TTL_DAYS`   | `365`                                                | a guest *is* their token — keep it long |
 | `API_SESSION_COOKIE`     | `kino_session`                                       |                                        |

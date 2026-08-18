@@ -21,10 +21,25 @@ import 'tokens.dart';
 const sessionMetadata = 'x-session-token';
 
 class KinoClient {
+  /// [secure] turns on TLS. With nothing else, that means the system's own
+  /// trust store — the right answer when this is reached through nginx with a
+  /// real certificate.
+  ///
+  /// [trustedRoots] is for the other case: a stack on the LAN, with a
+  /// certificate it signed itself. Pass the CA's PEM bytes (an asset, usually)
+  /// and this connection trusts that one authority *in addition to* the system
+  /// ones — which is a narrower thing to do than teaching all of Android to
+  /// trust it, and it does not require touching the network security config.
+  ///
+  /// [authority] is the name to check the certificate against when it isn't the
+  /// address dialled: a certificate says `kino.local`, the phone dials
+  /// `192.168.0.10`, and without this those disagree and the handshake fails.
   KinoClient({
     required this.host,
     this.port = 50061,
     this.secure = false,
+    List<int>? trustedRoots,
+    String? authority,
     TokenStore? tokens,
     this.mediaBase,
     this.timeout = const Duration(seconds: 20),
@@ -33,8 +48,12 @@ class KinoClient {
       host,
       port: port,
       options: ChannelOptions(
-        credentials:
-            secure ? const ChannelCredentials.secure() : const ChannelCredentials.insecure(),
+        credentials: secure
+            ? ChannelCredentials.secure(
+                certificates: trustedRoots,
+                authority: authority,
+              )
+            : const ChannelCredentials.insecure(),
         // A phone changes networks mid-sentence. Without a keepalive the first
         // call after the walk to the kitchen waits for a dead socket to time
         // out; with one, the channel notices and reconnects on its own.

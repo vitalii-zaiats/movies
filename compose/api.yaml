@@ -41,5 +41,54 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # The same image and the same database, over gRPC instead of HTTP — see
+  # `apps/api/src/api/rpc`. A process of its own rather than a thread beside
+  # uvicorn: the two share a database and nothing else, so neither should be
+  # able to take the other down.
+  #
+  # A port of its own, too. gRPC wants the whole connection, so sharing :80
+  # would mean teaching nginx h2c; what nginx *can* do easily is terminate TLS
+  # and `grpc_pass` to this service — see apps/api/README.md.
+  api-grpc:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      API_DATABASE_URL: postgresql+asyncpg://kino:kino@postgres:5432/kino
+      API_VOD_GRPC_TARGET: vod:50051
+      API_VOD_BASE: /vod
+      API_MEDIA_BASE: /media
+      API_GRPC_HOST: 0.0.0.0
+      # Plaintext here is the deliberate choice: this port is published for
+      # devices on the LAN, and TLS for them belongs on the nginx in front.
+      # Terminating here instead means a certificate per service — set
+      # API_GRPC_TLS_CERT and API_GRPC_TLS_KEY (paths to PEM files) and mount
+      # them if that's the trade you want.
+    command: ["api-grpc", "--host", "0.0.0.0", "--port", "50061"]
+    ports:
+      - "50061:50061"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      vod:
+        condition: service_started
+    healthcheck:
+      # The service answering its own Health call — the gRPC equivalent of
+      # curling /health, and it needs nothing the image doesn't already have.
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          import grpc
+          from contracts import catalogue_pb2 as pb, catalogue_pb2_grpc as stubs
+          with grpc.insecure_channel("127.0.0.1:50061") as channel:
+              stubs.CatalogueStub(channel).Health(pb.HealthRequest(), timeout=5)
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
 volumes:
   mediadata:

@@ -19,6 +19,20 @@ class Settings(BaseSettings):
     grpc_host: str = "127.0.0.1"
     grpc_port: int = 50061
 
+    # TLS on that port. Paths to PEM files; unset means the port is plaintext,
+    # which is what it should be when nginx terminates TLS in front of it and
+    # the hop from there is inside a compose network.
+    #
+    # Set them when a device talks to this port directly — a phone on the LAN
+    # has no nginx in the way, and a session token is a bearer token: whoever
+    # reads it off the wire is that user until it expires.
+    grpc_tls_cert: str | None = None
+    grpc_tls_key: str | None = None
+    # A CA to check *client* certificates against. Set it and the door opens
+    # only for devices holding a certificate we signed — mutual TLS, on top of
+    # the session token rather than instead of it.
+    grpc_tls_client_ca: str | None = None
+
     # Who may call this from another origin. The default is the wildcard, and
     # the wildcard deliberately means *no cookies* — see `main.create_app`.
     # Name your origins and the session cookie starts working cross-origin.

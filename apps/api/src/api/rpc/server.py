@@ -9,6 +9,7 @@ live.
 import asyncio
 import signal
 from collections.abc import Sequence
+from pathlib import Path
 
 import grpc
 from contracts import catalogue_pb2 as pb
@@ -29,6 +30,35 @@ from api.settings import settings
 # progress report, short enough that a deploy isn't held up by a phone that
 # wandered off mid-stream.
 GRACE_SECONDS = 5.0
+
+
+def credentials() -> grpc.ServerCredentials | None:
+    """TLS for this port, or None for plaintext — see `settings`.
+
+    A certificate without its key is not a configuration, it's a typo, and a
+    typo that silently downgrades a port to plaintext is the worst possible
+    outcome. So half a pair is refused rather than ignored.
+    """
+    cert, key = settings.grpc_tls_cert, settings.grpc_tls_key
+    if not cert and not key:
+        return None
+    if not (cert and key):
+        raise SystemExit("grpc tls needs both API_GRPC_TLS_CERT and API_GRPC_TLS_KEY")
+
+    chain = Path(cert).read_bytes()
+    private = Path(key).read_bytes()
+
+    roots = None
+    if settings.grpc_tls_client_ca:
+        roots = Path(settings.grpc_tls_client_ca).read_bytes()
+
+    return grpc.ssl_server_credentials(
+        [(private, chain)],
+        root_certificates=roots,
+        # Only when there is something to check them against. Demanding a client
+        # certificate with no CA to verify it is a refusal, not a policy.
+        require_client_auth=roots is not None,
+    )
 
 
 def build_server() -> grpc.aio.Server:
@@ -58,10 +88,20 @@ def _service_names() -> Sequence[str]:
 
 async def serve(host: str, port: int) -> None:
     server = build_server()
-    server.add_insecure_port(f"{host}:{port}")
+
+    tls = credentials()
+    if tls is None:
+        server.add_insecure_port(f"{host}:{port}")
+    else:
+        server.add_secure_port(f"{host}:{port}", tls)
 
     await server.start()
-    print(f"grpc on {host}:{port}", flush=True)
+    # Which of the two it ended up being is worth saying out loud: "it started"
+    # is not the same as "it started encrypted".
+    how = "plaintext" if tls is None else "tls"
+    if settings.grpc_tls_client_ca:
+        how = "mutual tls"
+    print(f"grpc on {host}:{port} ({how})", flush=True)
 
     stopping = asyncio.Event()
     loop = asyncio.get_running_loop()

@@ -18,6 +18,8 @@ installed editable.
 | [`apps/hub`](apps/hub)                           | WebSocket pairing hub — display ↔ remote over a Redis bus                            |
 | [`web`](web)                                     | Vue 3 + TS + SCSS PWA: player on the big screen, remote control on the phone         |
 | [`frontend`](frontend)                           | Nuxt 4 + TS + SCSS catalogue to browse: shows, episodes, playlists, search            |
+| [`mobile/kino_api`](mobile/kino_api)             | Flutter package: the catalogue over gRPC, with the session token handled              |
+| [`mobile/kino_app`](mobile/kino_app)             | Flutter app on that package — phone and Android TV from one binary                    |
 
 ```bash
 uv sync                                            # python side
@@ -35,10 +37,22 @@ uv run seed-catalogue data/family-guy-streams.jsonl  # fill both (services must 
 uv run proxy                                       # proxy      → :8001
 uv run hub                                         # socket     → :8010
 uv run api                                         # catalogue  → :8020
+uv run api-grpc                                    # the same, over gRPC → :50061
 uv run vod                                         # vod http   → :8030, grpc :50051
 cd web && npm install && npm run dev               # PWA        → :5173
 cd frontend && npm install && npm run dev          # catalogue  → :3000
+cd mobile/kino_app && flutter run                  # phone / TV → the gRPC port
 ```
+
+## Two ways in
+
+The catalogue is served twice: JSON over HTTP for the browsers, and
+[`catalogue.v1`](packages/contracts/src/contracts/catalogue.proto) over gRPC for
+the phone. They are two presentation layers, not two APIs — each opens a
+session, builds the graph from `api.core.services` and calls one method on it,
+so a rule written once holds in both. Ingest, VOD sync and the admin screens
+stay on HTTP: those are machines talking to machines, or somebody with a file
+picker.
 
 ## Catalogue and VOD
 
