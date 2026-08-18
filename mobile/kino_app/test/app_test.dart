@@ -11,7 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:grpc/grpc.dart';
 import 'package:kino_api/kino_api.dart';
 import 'package:kino_api/src/generated/contracts/catalogue.pbgrpc.dart';
-import 'package:kino_app/main.dart';
+import 'package:kino_app/app.dart';
+import 'package:kino_app/core/settings.dart';
 
 class _Accounts extends AccountsServiceBase {
   @override
@@ -116,7 +117,7 @@ void main() {
     // test the clock is fake and a plain `pumpAndSettle` would settle long
     // before the server had said anything.
     await tester.runAsync(() async {
-      await tester.pumpWidget(KinoApp(client: client));
+      await tester.pumpWidget(KinoApp(client: client, settings: Settings()));
       for (var frame = 0; frame < 10; frame++) {
         await Future<void>.delayed(const Duration(milliseconds: 50));
         await tester.pump();
@@ -124,13 +125,21 @@ void main() {
     });
     await tester.pump();
 
-    expect(find.text('Guest ff00'), findsOneWidget);
+    // The name is drawn as one of the system's labels, so it arrives upper
+    // case — see `theme.dart`.
+    expect(find.text('GUEST FF00'), findsOneWidget);
     expect(find.text('Мараве'), findsOneWidget);
-    expect(find.text('film'), findsOneWidget);
-    expect(find.text('61 episodes · 60 playable'), findsOneWidget);
+    // Upper case because the design system says so — see `theme.dart`.
+    expect(find.text('FILM'), findsOneWidget);
+    expect(find.text('61 EPISODES · 60 PLAYABLE'), findsOneWidget);
     expect(find.text('2 of 2'), findsOneWidget);
 
-    await client.close();
-    await server.shutdown();
+    // Shutting both down is real I/O too. Bounded, because a channel with a
+    // half-open connection can wait a long time and this is a teardown, not an
+    // assertion.
+    await tester.runAsync(() async {
+      await client.close().timeout(const Duration(seconds: 2), onTimeout: () {});
+      await server.shutdown().timeout(const Duration(seconds: 2), onTimeout: () {});
+    });
   });
 }
