@@ -72,5 +72,9 @@
   "neverPackaged": "Цей епізод так і не спакували.",
   "remoteHint": "OK — пауза · ◀ ▶ — 10 секунд · Назад — вийти",
   "share": "Поділитись",
-  "shareText": "{title} — {url}"
+  "shareText": "{title} — {url}",
+  "seasonCount": "{count, plural, one{{count} сезон} few{{count} сезони} many{{count} сезонів} other{{count} сезону}}",
+  "seasonNumber": "Сезон {number}",
+  "voice": "Озвучка",
+  "defaultVoice": "Як опубліковано"
 }

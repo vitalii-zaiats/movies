@@ -535,6 +535,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title} — {url}'**
   String shareText(String title, String url);
+
+  /// No description provided for @seasonCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 season} other{{count} seasons}}'**
+  String seasonCount(int count);
+
+  /// No description provided for @seasonNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Season {number}'**
+  String seasonNumber(int number);
+
+  /// No description provided for @voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get voice;
+
+  /// No description provided for @defaultVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'As published'**
+  String get defaultVoice;
 }
 
 class _AppLocalizationsDelegate

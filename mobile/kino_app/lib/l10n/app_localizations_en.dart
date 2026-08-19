@@ -272,4 +272,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String shareText(String title, String url) {
     return '$title — $url';
   }
+
+  @override
+  String seasonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seasons',
+      one: '1 season',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String seasonNumber(int number) {
+    return 'Season $number';
+  }
+
+  @override
+  String get voice => 'Voice';
+
+  @override
+  String get defaultVoice => 'As published';
 }

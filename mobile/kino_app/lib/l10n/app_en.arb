@@ -185,5 +185,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "seasonCount": "{count, plural, =1{1 season} other{{count} seasons}}",
+  "@seasonCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seasonNumber": "Season {number}",
+  "@seasonNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "voice": "Voice",
+  "defaultVoice": "As published"
 }

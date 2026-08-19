@@ -37,10 +37,24 @@ const _step = Duration(seconds: 10);
 const _linger = Duration(seconds: 4);
 
 class PlayerScreen extends StatefulWidget {
-  const PlayerScreen({required this.episode, required this.show, super.key});
+  const PlayerScreen({
+    required this.episode,
+    required this.show,
+    this.voice,
+    super.key,
+  });
 
   final Episode episode;
   final Show show;
+
+  /// Which dub to open with, by the studio's name — chosen on the show's page
+  /// and carried here, because "watch this series in that voice" is a decision
+  /// about the series, not about episode four.
+  ///
+  /// An episode that doesn't have it plays whatever it does have: dubs come
+  /// from different studios at different times, and a gap in one is not a
+  /// reason to refuse the episode.
+  final String? voice;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -108,8 +122,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
+  /// The track the show's page asked for, if this episode has it.
+  Track? _preferred() {
+    final wanted = widget.voice;
+    if (wanted == null) return null;
+    for (final track in widget.episode.tracks) {
+      if (track.hasAudio() && track.audio == wanted) return track;
+    }
+    return null;
+  }
+
   Future<void> _open({Track? voice}) async {
-    final url = voice == null ? _kino.streamUrl(widget.episode) : _kino.trackUrl(voice);
+    final chosen = voice ?? _preferred();
+    final url = chosen == null ? _kino.streamUrl(widget.episode) : _kino.trackUrl(chosen);
     if (url == null) {
       // A marker rather than a sentence: what language it is said in is the
       // screen's business, and this class has no `BuildContext`.
@@ -153,7 +178,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     setState(() {
       _player = player;
-      _voice = voice;
+      _voice = chosen;
       _problem = null;
     });
     _ticker = Timer.periodic(_reportEvery, (_) => _report());

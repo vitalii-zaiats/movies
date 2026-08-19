@@ -226,9 +226,17 @@ class _Hero extends StatelessWidget {
     final details = detail.show;
     final show = details.show;
 
+    final l10n = AppLocalizations.of(context);
+    final seasons = detail.episodes.map((episode) => episode.season).toSet();
+
     final facts = <String>[
       if (details.hasYear()) '${details.year}',
-      if (details.hasDuration()) details.duration,
+      // For a series, how much of it there is beats how long one episode runs.
+      if (!show.isFilm) ...[
+        if (seasons.length > 1) l10n.seasonCount(seasons.length),
+        l10n.episodeCount(detail.episodes.length),
+      ] else if (details.hasDuration())
+        details.duration,
       if (details.hasAgeRating()) details.ageRating,
       if (details.countries.isNotEmpty) details.countries.first,
     ];
@@ -344,18 +352,61 @@ class _Blank extends StatelessWidget {
 }
 
 /// Everything that isn't the picture, on the page that slides over it.
-class _Sheet extends StatelessWidget {
+///
+/// For a series this is also where the choosing happens: which season, and — if
+/// a source published the same episodes twice — whose voice. Both are decisions
+/// about the *show*, which is why they live here rather than being made again
+/// inside the player for every episode.
+class _Sheet extends StatefulWidget {
   const _Sheet({required this.detail});
 
   final ShowWithEpisodes detail;
+
+  @override
+  State<_Sheet> createState() => _SheetState();
+}
+
+class _SheetState extends State<_Sheet> {
+  int? _season;
+  String? _voice;
+
+  /// Seasons in order. A source that numbers nothing gives one season, which is
+  /// the same thing a film is, and neither gets a picker.
+  List<int> get _seasons {
+    final numbers = widget.detail.episodes.map((episode) => episode.season).toSet().toList()
+      ..sort();
+    return numbers;
+  }
+
+  /// The voices this show was published in, in the order the episodes list them
+  /// — which is the order the source put them in, and as good as any.
+  List<String> get _voices {
+    final names = <String>[];
+    for (final episode in widget.detail.episodes) {
+      for (final track in episode.tracks) {
+        if (track.hasAudio() && !names.contains(track.audio)) names.add(track.audio);
+      }
+    }
+    return names;
+  }
+
+  List<Episode> get _episodes {
+    final season = _season ?? (_seasons.isEmpty ? null : _seasons.first);
+    if (season == null) return widget.detail.episodes;
+    return widget.detail.episodes.where((episode) => episode.season == season).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
     final l10n = AppLocalizations.of(context);
     final language = Localizations.localeOf(context).languageCode;
-    final details = detail.show;
+    final details = widget.detail.show;
     final show = details.show;
+
+    final seasons = _seasons;
+    final voices = _voices;
+    final episodes = _episodes;
 
     return Container(
       width: double.infinity,
@@ -368,7 +419,7 @@ class _Sheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _PlayAction(detail: detail),
+          _PlayAction(episodes: episodes, show: show, voice: _voice),
           if (details.genres.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 16),
@@ -402,6 +453,7 @@ class _Sheet extends StatelessWidget {
               padding: const EdgeInsets.only(top: 16),
               child: _Credits(details: details),
             ),
+
           // A film is one episode and the button above already plays it; listing
           // it again under a heading would be a list of one.
           if (!show.isFilm) ...[
@@ -409,15 +461,83 @@ class _Sheet extends StatelessWidget {
             Container(height: 2, color: palette.text),
             const SizedBox(height: 10),
             Text(
-              l10n.episodeCount(detail.episodes.length).toUpperCase(),
+              [
+                if (seasons.length > 1) l10n.seasonCount(seasons.length),
+                l10n.episodeCount(widget.detail.episodes.length),
+              ].join(' · ').toUpperCase(),
               style: label(color: palette.text),
             ),
+
+            // One season is not a choice, and drawing a picker for it would be
+            // chrome pretending there is something to decide.
+            if (seasons.length > 1)
+              _Picker<int>(
+                values: seasons,
+                selected: _season ?? seasons.first,
+                name: (season) => l10n.seasonNumber(season),
+                onPick: (season) => setState(() => _season = season),
+              ),
+
+            // Same rule for voices, and the same reason: most shows have one.
+            if (voices.length > 1) ...[
+              const SizedBox(height: 16),
+              Text(l10n.voice.toUpperCase(), style: label(color: palette.muted)),
+              _Picker<String?>(
+                values: [null, ...voices],
+                selected: _voice,
+                name: (voice) => voice ?? l10n.defaultVoice,
+                onPick: (voice) => setState(() => _voice = voice),
+              ),
+            ],
+
             const SizedBox(height: 4),
-            for (final (index, episode) in detail.episodes.indexed) ...[
+            for (final (index, episode) in episodes.indexed) ...[
               if (index > 0) const Divider(height: 1),
-              _EpisodeRow(episode: episode, show: show, first: index == 0),
+              _EpisodeRow(
+                episode: episode,
+                show: show,
+                voice: _voice,
+                first: index == 0,
+              ),
             ],
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A row of choices, in the system's shapes. Scrolls sideways rather than
+/// wrapping: twelve seasons should cost a swipe, not four lines of the page.
+class _Picker<T> extends StatelessWidget {
+  const _Picker({
+    required this.values,
+    required this.selected,
+    required this.name,
+    required this.onPick,
+  });
+
+  final List<T> values;
+  final T selected;
+  final String Function(T) name;
+  final void Function(T) onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          for (final value in values)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: ChoiceChip(
+                label: Text(name(value)),
+                selected: value == selected,
+                onSelected: (_) => onPick(value),
+              ),
+            ),
         ],
       ),
     );
@@ -470,16 +590,19 @@ class _Credits extends StatelessWidget {
 /// for a film is the film. A title where nothing was ever packaged says so
 /// rather than offering a button that can only disappoint.
 class _PlayAction extends StatelessWidget {
-  const _PlayAction({required this.detail});
+  const _PlayAction({required this.episodes, required this.show, this.voice});
 
-  final ShowWithEpisodes detail;
+  /// The episodes currently on offer — for a series, the chosen season, so Play
+  /// starts where the reader is looking rather than at the beginning of time.
+  final List<Episode> episodes;
+  final Show show;
+  final String? voice;
 
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
     final l10n = AppLocalizations.of(context);
-    final show = detail.show.show;
-    final playable = detail.episodes.where((episode) => episode.hasPlaylist());
+    final playable = episodes.where((episode) => episode.hasPlaylist());
 
     if (playable.isEmpty) {
       return Row(
@@ -499,7 +622,9 @@ class _PlayAction extends StatelessWidget {
       child: FilledButton.icon(
         autofocus: Kino.isTv(context),
         onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => PlayerScreen(episode: first, show: show)),
+          MaterialPageRoute<void>(
+            builder: (_) => PlayerScreen(episode: first, show: show, voice: voice),
+          ),
         ),
         icon: const Glyph(Glyphs.play, size: 18),
         label: Text((code == null ? l10n.play : l10n.playEpisode(code)).toUpperCase()),
@@ -509,10 +634,16 @@ class _PlayAction extends StatelessWidget {
 }
 
 class _EpisodeRow extends StatelessWidget {
-  const _EpisodeRow({required this.episode, required this.show, this.first = false});
+  const _EpisodeRow({
+    required this.episode,
+    required this.show,
+    this.voice,
+    this.first = false,
+  });
 
   final Episode episode;
   final Show show;
+  final String? voice;
   final bool first;
 
   @override
@@ -550,7 +681,7 @@ class _EpisodeRow extends StatelessWidget {
       onTap: playable
           ? () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => PlayerScreen(episode: episode, show: show),
+                  builder: (_) => PlayerScreen(episode: episode, show: show, voice: voice),
                 ),
               )
           : null,

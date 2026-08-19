@@ -275,4 +275,28 @@ class AppLocalizationsUk extends AppLocalizations {
   String shareText(String title, String url) {
     return '$title — $url';
   }
+
+  @override
+  String seasonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сезону',
+      many: '$count сезонів',
+      few: '$count сезони',
+      one: '$count сезон',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String seasonNumber(int number) {
+    return 'Сезон $number';
+  }
+
+  @override
+  String get voice => 'Озвучка';
+
+  @override
+  String get defaultVoice => 'Як опубліковано';
 }
