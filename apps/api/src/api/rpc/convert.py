@@ -18,7 +18,7 @@ from typing import Any
 from contracts import catalogue_pb2 as pb
 
 from api.modules.accounts.models import Role
-from api.modules.accounts.schemas import UserOut
+from api.modules.accounts.schemas import DeviceLinkOut, UserOut
 from api.modules.activity.schemas import HistoryEntry, ProgressOut
 from api.modules.catalogue.schemas import (
     EpisodeOut,
@@ -113,6 +113,15 @@ def identity(token: str, dto: UserOut) -> pb.Identity:
 
 
 # --- catalogue --------------------------------------------------------------
+
+
+def device_link(dto: DeviceLinkOut) -> pb.DeviceLink:
+    return pb.DeviceLink(
+        code=dto.code,
+        secret=dto.secret,
+        verify_path=dto.verify_path,
+        expires_in=dto.expires_in,
+    )
 
 
 def show(dto: ShowOut) -> pb.Show:

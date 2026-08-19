@@ -25,8 +25,6 @@ from api.modules.accounts.schemas import (
     UserPage,
 )
 from api.modules.accounts.service import Credential
-from api.settings import settings
-from api.core.models import utcnow
 from api.modules.accounts.transport import attach_token, clear_token, read_token
 
 router = APIRouter(tags=["accounts"])
@@ -140,24 +138,13 @@ async def set_role(public_id: str, body: RoleRequest, _: Admin, accounts: Accoun
 async def start_device_link(request: Request, accounts: Accounts) -> DeviceLinkOut:
     """Begin a pairing. Deliberately open: nobody is signed in yet."""
     link = await accounts.start_link(device_name=request.headers.get("user-agent"))
-    return DeviceLinkOut(
-        code=link.code,
-        secret=link.secret,
-        verify_path=f"{settings.link_base.rstrip('/')}?code={link.code}",
-        expires_in=int((link.expires_at - utcnow()).total_seconds()),
-    )
+    return DeviceLinkOut.of(link)
 
 
 @router.get("/auth/device/{code}", response_model=DeviceLinkStatus)
 async def device_link_status(code: str, accounts: Accounts) -> DeviceLinkStatus:
     """What is being asked for, for the page that is about to say yes."""
-    link = await accounts.link_for(code)
-    return DeviceLinkStatus(
-        code=link.code,
-        device_name=link.device_name,
-        approved=not link.pending,
-        expires_in=int((link.expires_at - utcnow()).total_seconds()),
-    )
+    return DeviceLinkStatus.of(await accounts.link_for(code))
 
 
 @router.post("/auth/device/approve", response_model=DeviceLinkStatus)
@@ -166,13 +153,7 @@ async def approve_device_link(
 ) -> DeviceLinkStatus:
     """Say yes, as somebody. The only step in this dance that needs an identity,
     and it is the phone's."""
-    link = await accounts.approve_link(body.code, user)
-    return DeviceLinkStatus(
-        code=link.code,
-        device_name=link.device_name,
-        approved=True,
-        expires_in=int((link.expires_at - utcnow()).total_seconds()),
-    )
+    return DeviceLinkStatus.of(await accounts.approve_link(body.code, user))
 
 
 @router.post("/auth/device/collect", response_model=DeviceSession)

@@ -10,12 +10,10 @@ import grpc
 from contracts import catalogue_pb2 as pb
 from contracts import catalogue_pb2_grpc as stubs
 
-from api.core.models import utcnow
-from api.modules.accounts.schemas import UserOut
+from api.modules.accounts.schemas import DeviceLinkOut, UserOut
 from api.modules.accounts.service import Credential
 from api.rpc import convert
 from api.rpc.calls import call, user_agent
-from api.settings import settings
 
 
 async def _identity(rpc, credential: Credential) -> pb.Identity:  # type: ignore[no-untyped-def]
@@ -109,12 +107,7 @@ class AccountsService(stubs.AccountsServicer):
         async with call(context) as rpc:
             link = await rpc.services.accounts.start_link(device_name=name)
 
-        return pb.DeviceLink(
-            code=link.code,
-            secret=link.secret,
-            verify_path=f"{settings.link_base.rstrip('/')}?code={link.code}",
-            expires_in=max(0, int((link.expires_at - utcnow()).total_seconds())),
-        )
+        return convert.device_link(DeviceLinkOut.of(link))
 
     async def CollectDeviceLink(
         self, request: pb.CollectDeviceLinkRequest, context: grpc.aio.ServicerContext

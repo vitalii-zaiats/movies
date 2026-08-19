@@ -7,8 +7,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
+from api.core.models import utcnow
 from api.core.schemas import ORMModel, Page
 from api.modules.accounts.models import Role
+from api.modules.accounts.service import DeviceRequest, DeviceStatus
+from api.settings import settings
 
 
 class UserOut(ORMModel):
@@ -70,6 +73,15 @@ class DeviceLinkOut(BaseModel):
     verify_path: str
     expires_in: int
 
+    @classmethod
+    def of(cls, request: DeviceRequest) -> "DeviceLinkOut":
+        return cls(
+            code=request.code,
+            secret=request.secret,
+            verify_path=_verify_path(request.code),
+            expires_in=_seconds_left(request.expires_at),
+        )
+
 
 class DeviceLinkStatus(BaseModel):
     """What the phone is about to approve, before it approves it."""
@@ -78,6 +90,30 @@ class DeviceLinkStatus(BaseModel):
     device_name: str | None
     approved: bool
     expires_in: int
+
+    @classmethod
+    def of(cls, status: DeviceStatus) -> "DeviceLinkStatus":
+        return cls(
+            code=status.code,
+            device_name=status.device_name,
+            approved=status.approved,
+            expires_in=_seconds_left(status.expires_at),
+        )
+
+
+# Where the phone should go, and how long it has to get there. Derived here
+# rather than in the routes because both presentation layers answer with them,
+# and the first version of this file computed them twice — which is how gRPC
+# ended up clamping the countdown at zero and HTTP handing out negatives.
+
+
+def _verify_path(code: str) -> str:
+    return f"{settings.link_base.rstrip('/')}?code={code}"
+
+
+def _seconds_left(until: datetime) -> int:
+    """Never negative: an expired code has no time left, it has none."""
+    return max(0, int((until - utcnow()).total_seconds()))
 
 
 class DeviceApproval(BaseModel):

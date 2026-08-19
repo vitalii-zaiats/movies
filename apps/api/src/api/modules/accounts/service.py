@@ -54,6 +54,30 @@ class DeviceRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class DeviceStatus:
+    """A pending pairing, as the page about to approve it needs to see it.
+
+    A DTO rather than the row itself: two presentation layers read this, and
+    handing them a live `DeviceLink` would mean both of them knowing which of
+    its columns are safe to show — `secret_digest` is right there.
+    """
+
+    code: str
+    device_name: str | None
+    approved: bool
+    expires_at: datetime
+
+    @classmethod
+    def of(cls, link: DeviceLink) -> "DeviceStatus":
+        return cls(
+            code=link.code,
+            device_name=link.device_name,
+            approved=not link.pending,
+            expires_at=link.expires_at,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class Credential:
     """A user plus the one and only time we'll ever say their token out loud."""
 
@@ -262,25 +286,29 @@ class AccountService:
         await self.session.commit()
         return DeviceRequest(code=link.code, secret=secret, expires_at=link.expires_at)
 
-    async def link_for(self, code: str) -> DeviceLink:
+    async def link_for(self, code: str) -> DeviceStatus:
         """The pending request behind a code, for the page about to approve it."""
-        link = await self.links.by_code(code)
-        if link is None:
-            raise NotFound("no such code")
-        if link.expired(utcnow()):
-            raise Invalid("that code has expired")
-        return link
+        return DeviceStatus.of(await self._live_link(code))
 
-    async def approve_link(self, code: str, user: User) -> DeviceLink:
+    async def approve_link(self, code: str, user: User) -> DeviceStatus:
         """Say yes, as somebody. This is the only step that needs an identity —
         and it is the phone's, not the television's."""
-        link = await self.link_for(code)
+        link = await self._live_link(code)
         if not link.pending and link.user_id != user.id:
             raise Conflict("that code was already used by somebody else")
 
         link.user_id = user.id
         link.approved_at = utcnow()
         await self.session.commit()
+        return DeviceStatus.of(link)
+
+    async def _live_link(self, code: str) -> DeviceLink:
+        """The row, for the two methods above. Everything else gets a DTO."""
+        link = await self.links.by_code(code)
+        if link is None:
+            raise NotFound("no such code")
+        if link.expired(utcnow()):
+            raise Invalid("that code has expired")
         return link
 
     async def collect_link(
