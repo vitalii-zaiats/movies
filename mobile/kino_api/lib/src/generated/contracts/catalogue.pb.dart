@@ -1049,11 +1049,13 @@ class Track extends $pb.GeneratedMessage {
     $core.int? vodId,
     $core.String? audio,
     $core.String? playlist,
+    $core.String? language,
   }) {
     final result = create();
     if (vodId != null) result.vodId = vodId;
     if (audio != null) result.audio = audio;
     if (playlist != null) result.playlist = playlist;
+    if (language != null) result.language = language;
     return result;
   }
 
@@ -1073,6 +1075,7 @@ class Track extends $pb.GeneratedMessage {
     ..aI(1, _omitFieldNames ? '' : 'vodId', fieldType: $pb.PbFieldType.OU3)
     ..aOS(2, _omitFieldNames ? '' : 'audio')
     ..aOS(3, _omitFieldNames ? '' : 'playlist')
+    ..aOS(4, _omitFieldNames ? '' : 'language')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1102,6 +1105,7 @@ class Track extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearVodId() => $_clearField(1);
 
+  /// The studio, or the technique — "Le Doyen", "Багатоголосий закадровий".
   @$pb.TagNumber(2)
   $core.String get audio => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -1119,6 +1123,18 @@ class Track extends $pb.GeneratedMessage {
   $core.bool hasPlaylist() => $_has(2);
   @$pb.TagNumber(3)
   void clearPlaylist() => $_clearField(3);
+
+  /// What language it is in, ISO 639-1. Absent where nobody could say: an
+  /// original soundtrack whose language the crawl never learned. The name above
+  /// never answers this — a studio is not a language.
+  @$pb.TagNumber(4)
+  $core.String get language => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set language($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasLanguage() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearLanguage() => $_clearField(4);
 }
 
 class Episode extends $pb.GeneratedMessage {
@@ -1633,6 +1649,7 @@ class ListShowsRequest extends $pb.GeneratedMessage {
     $core.int? limit,
     $core.int? offset,
     $core.String? kind,
+    $core.String? language,
   }) {
     final result = create();
     if (q != null) result.q = q;
@@ -1641,6 +1658,7 @@ class ListShowsRequest extends $pb.GeneratedMessage {
     if (limit != null) result.limit = limit;
     if (offset != null) result.offset = offset;
     if (kind != null) result.kind = kind;
+    if (language != null) result.language = language;
     return result;
   }
 
@@ -1664,6 +1682,7 @@ class ListShowsRequest extends $pb.GeneratedMessage {
     ..aI(4, _omitFieldNames ? '' : 'limit', fieldType: $pb.PbFieldType.OU3)
     ..aI(5, _omitFieldNames ? '' : 'offset', fieldType: $pb.PbFieldType.OU3)
     ..aOS(6, _omitFieldNames ? '' : 'kind')
+    ..aOS(7, _omitFieldNames ? '' : 'language')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1744,6 +1763,16 @@ class ListShowsRequest extends $pb.GeneratedMessage {
   $core.bool hasKind() => $_has(5);
   @$pb.TagNumber(6)
   void clearKind() => $_clearField(6);
+
+  /// Only titles with a track in this language, ISO 639-1.
+  @$pb.TagNumber(7)
+  $core.String get language => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set language($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasLanguage() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearLanguage() => $_clearField(7);
 }
 
 class ListShowsResponse extends $pb.GeneratedMessage {
@@ -1817,6 +1846,7 @@ class StreamShowsRequest extends $pb.GeneratedMessage {
     ShowOrder? order,
     $core.int? limit,
     $core.String? kind,
+    $core.String? language,
   }) {
     final result = create();
     if (q != null) result.q = q;
@@ -1824,6 +1854,7 @@ class StreamShowsRequest extends $pb.GeneratedMessage {
     if (order != null) result.order = order;
     if (limit != null) result.limit = limit;
     if (kind != null) result.kind = kind;
+    if (language != null) result.language = language;
     return result;
   }
 
@@ -1846,6 +1877,7 @@ class StreamShowsRequest extends $pb.GeneratedMessage {
         enumValues: ShowOrder.values)
     ..aI(4, _omitFieldNames ? '' : 'limit', fieldType: $pb.PbFieldType.OU3)
     ..aOS(5, _omitFieldNames ? '' : 'kind')
+    ..aOS(6, _omitFieldNames ? '' : 'language')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1912,6 +1944,15 @@ class StreamShowsRequest extends $pb.GeneratedMessage {
   $core.bool hasKind() => $_has(4);
   @$pb.TagNumber(5)
   void clearKind() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get language => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set language($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasLanguage() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearLanguage() => $_clearField(6);
 }
 
 class GetShowRequest extends $pb.GeneratedMessage {

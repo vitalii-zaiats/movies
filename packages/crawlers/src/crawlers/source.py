@@ -23,6 +23,18 @@ class Source(ABC):
 
     name: ClassVar[str]
 
+    # What language the audio on this site is in, as an ISO 639-1 code.
+    #
+    # Nothing downstream can work this out for itself: HLS carries no language
+    # tag on these streams, and a dub's name is a studio ("Le Doyen") or a
+    # technique ("Багатоголосий закадровий"), never a language. The site knows,
+    # because a site like this one publishes in one language; so the site's
+    # crawler is where that fact is written down.
+    #
+    # None means nobody has said, which the seeder treats as "don't claim to
+    # know" rather than as a default.
+    language: ClassVar[str | None] = None
+
     # False means there is exactly one document to read; the engine then ignores
     # the page count instead of fetching the same URL over and over.
     paginated: ClassVar[bool] = True

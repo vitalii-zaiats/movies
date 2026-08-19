@@ -76,5 +76,7 @@
   "seasonCount": "{count, plural, one{{count} сезон} few{{count} сезони} many{{count} сезонів} other{{count} сезону}}",
   "seasonNumber": "Сезон {number}",
   "voice": "Озвучка",
-  "defaultVoice": "Як опубліковано"
+  "defaultVoice": "Як опубліковано",
+  "anyLanguage": "Будь-яка мова",
+  "filterByLanguage": "Фільтр за мовою"
 }

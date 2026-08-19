@@ -1282,6 +1282,7 @@ version = "0.1.0"
 source = { editable = "apps/seeder" }
 dependencies = [
     { name = "contracts" },
+    { name = "crawlers" },
     { name = "grpcio" },
     { name = "httpx" },
 ]
@@ -1289,6 +1290,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "contracts", editable = "packages/contracts" },
+    { name = "crawlers", editable = "packages/crawlers" },
     { name = "grpcio", specifier = ">=1.68" },
     { name = "httpx", specifier = ">=0.28" },
 ]

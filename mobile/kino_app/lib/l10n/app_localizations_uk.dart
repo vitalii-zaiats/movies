@@ -299,4 +299,10 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get defaultVoice => 'Як опубліковано';
+
+  @override
+  String get anyLanguage => 'Будь-яка мова';
+
+  @override
+  String get filterByLanguage => 'Фільтр за мовою';
 }

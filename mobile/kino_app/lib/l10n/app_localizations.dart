@@ -559,6 +559,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'As published'**
   String get defaultVoice;
+
+  /// No description provided for @anyLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Any language'**
+  String get anyLanguage;
+
+  /// No description provided for @filterByLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by language'**
+  String get filterByLanguage;
 }
 
 class _AppLocalizationsDelegate

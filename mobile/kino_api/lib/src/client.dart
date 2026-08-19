@@ -197,10 +197,16 @@ class KinoClient {
   /// [kind] is what the source called it — `film`, `series`, `cartoon`,
   /// `anime` — which is a different question from [series]: that one counts
   /// episodes, and a cartoon has the same shape as a film.
+  ///
+  /// [language] keeps only titles with a track in it, ISO 639-1. Which language
+  /// a track is in comes from the crawler — a site publishes in one, and
+  /// nothing in the stream says — so this filter is only as complete as the
+  /// crawls behind it.
   Future<ListShowsResponse> shows({
     String? q,
     bool? series,
     String? kind,
+    String? language,
     ShowOrder order = ShowOrder.SHOW_ORDER_UNSPECIFIED,
     int limit = 50,
     int offset = 0,
@@ -209,6 +215,7 @@ class KinoClient {
     if (q != null && q.isNotEmpty) request.q = q;
     if (series != null) request.series = series;
     if (kind != null && kind.isNotEmpty) request.kind = kind;
+    if (language != null && language.isNotEmpty) request.language = language;
     return _unary(catalogue.listShows(request, options: _options));
   }
 
@@ -217,6 +224,7 @@ class KinoClient {
     String? q,
     bool? series,
     String? kind,
+    String? language,
     ShowOrder order = ShowOrder.SHOW_ORDER_UNSPECIFIED,
     int limit = 0,
   }) {
@@ -224,6 +232,7 @@ class KinoClient {
     if (q != null && q.isNotEmpty) request.q = q;
     if (series != null) request.series = series;
     if (kind != null && kind.isNotEmpty) request.kind = kind;
+    if (language != null && language.isNotEmpty) request.language = language;
 
     final call = catalogue.streamShows(request, options: _options);
     _unawaited(_remember(call.headers));

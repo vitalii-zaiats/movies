@@ -146,7 +146,20 @@ class EpisodeTrack(Base, TimestampMixin):
     vod_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
     # "Стругачка", "DniproFilm" — whatever the source called the studio. None
     # when the source offered a second player but never said why.
-    audio: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    #
+    # Unbounded, for the same reason `Show.audio` is: a source that publishes one
+    # stream but knows of six dubs writes all six into one line, and a popular
+    # film's line runs past 200 characters. How long that sentence is belongs to
+    # whoever wrote it.
+    audio: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # What language this track is *in*, as an ISO 639-1 code — which the dub's
+    # name above never says, since a studio is not a language. It comes from the
+    # crawler, because a site publishes in one language and nothing in the
+    # stream itself declares one. Null where nobody could say: an original
+    # soundtrack whose language the crawl never learned.
+    #
+    # Indexed because browsing filters on it.
+    language: Mapped[str | None] = mapped_column(String(8), nullable=True, index=True)
 
     episode: Mapped[Episode] = relationship(back_populates="tracks")
 

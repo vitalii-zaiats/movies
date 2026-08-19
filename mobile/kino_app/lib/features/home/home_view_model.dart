@@ -43,6 +43,10 @@ class HomeViewModel extends ChangeNotifier {
   int total = 0;
   bool loading = false;
   Browse browse = Browse.all;
+
+  /// ISO 639-1, or null for "don't care". What language a track is in comes
+  /// from the crawler, so this filter is only ever as complete as the crawls.
+  String? language;
   String query = '';
   Object? error;
 
@@ -90,6 +94,7 @@ class HomeViewModel extends ChangeNotifier {
       final page = await _kino.shows(
         q: query.isEmpty ? null : query,
         kind: browse.kind,
+        language: language,
         // Newest first while browsing; by title once there's a query, because
         // "closest match" is not something the server ranks and alphabetical at
         // least doesn't pretend to.
@@ -116,6 +121,12 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> show(Browse tab) {
     if (tab == browse) return Future.value();
     browse = tab;
+    return refresh();
+  }
+
+  Future<void> spoken(String? code) {
+    if (code == language) return Future.value();
+    language = code;
     return refresh();
   }
 }

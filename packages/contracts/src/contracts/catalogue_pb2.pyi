@@ -203,14 +203,16 @@ class ShowDetails(_message.Message):
     def __init__(self, show: _Optional[_Union[Show, _Mapping]] = ..., original_title: _Optional[str] = ..., kind: _Optional[str] = ..., year: _Optional[int] = ..., year_end: _Optional[int] = ..., audio: _Optional[str] = ..., quality: _Optional[str] = ..., description: _Optional[str] = ..., duration: _Optional[str] = ..., age_rating: _Optional[str] = ..., genres: _Optional[_Iterable[str]] = ..., countries: _Optional[_Iterable[str]] = ..., directors: _Optional[_Iterable[str]] = ..., starring: _Optional[_Iterable[str]] = ..., imdb_id: _Optional[str] = ..., imdb_rating: _Optional[float] = ..., imdb_votes: _Optional[int] = ..., imdb_url: _Optional[str] = ...) -> None: ...
 
 class Track(_message.Message):
-    __slots__ = ("vod_id", "audio", "playlist")
+    __slots__ = ("vod_id", "audio", "playlist", "language")
     VOD_ID_FIELD_NUMBER: _ClassVar[int]
     AUDIO_FIELD_NUMBER: _ClassVar[int]
     PLAYLIST_FIELD_NUMBER: _ClassVar[int]
+    LANGUAGE_FIELD_NUMBER: _ClassVar[int]
     vod_id: int
     audio: str
     playlist: str
-    def __init__(self, vod_id: _Optional[int] = ..., audio: _Optional[str] = ..., playlist: _Optional[str] = ...) -> None: ...
+    language: str
+    def __init__(self, vod_id: _Optional[int] = ..., audio: _Optional[str] = ..., playlist: _Optional[str] = ..., language: _Optional[str] = ...) -> None: ...
 
 class Episode(_message.Message):
     __slots__ = ("id", "season", "episode", "episode_end", "title", "poster", "source_url", "vod_id", "vod_url", "playlist", "tracks")
@@ -279,20 +281,22 @@ class HealthResponse(_message.Message):
     def __init__(self, status: _Optional[str] = ..., shows: _Optional[int] = ..., episodes: _Optional[int] = ...) -> None: ...
 
 class ListShowsRequest(_message.Message):
-    __slots__ = ("q", "series", "order", "limit", "offset", "kind")
+    __slots__ = ("q", "series", "order", "limit", "offset", "kind", "language")
     Q_FIELD_NUMBER: _ClassVar[int]
     SERIES_FIELD_NUMBER: _ClassVar[int]
     ORDER_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     OFFSET_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
+    LANGUAGE_FIELD_NUMBER: _ClassVar[int]
     q: str
     series: bool
     order: ShowOrder
     limit: int
     offset: int
     kind: str
-    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ..., offset: _Optional[int] = ..., kind: _Optional[str] = ...) -> None: ...
+    language: str
+    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ..., offset: _Optional[int] = ..., kind: _Optional[str] = ..., language: _Optional[str] = ...) -> None: ...
 
 class ListShowsResponse(_message.Message):
     __slots__ = ("page", "items")
@@ -303,18 +307,20 @@ class ListShowsResponse(_message.Message):
     def __init__(self, page: _Optional[_Union[PageInfo, _Mapping]] = ..., items: _Optional[_Iterable[_Union[ShowSummary, _Mapping]]] = ...) -> None: ...
 
 class StreamShowsRequest(_message.Message):
-    __slots__ = ("q", "series", "order", "limit", "kind")
+    __slots__ = ("q", "series", "order", "limit", "kind", "language")
     Q_FIELD_NUMBER: _ClassVar[int]
     SERIES_FIELD_NUMBER: _ClassVar[int]
     ORDER_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
+    LANGUAGE_FIELD_NUMBER: _ClassVar[int]
     q: str
     series: bool
     order: ShowOrder
     limit: int
     kind: str
-    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ..., kind: _Optional[str] = ...) -> None: ...
+    language: str
+    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ..., kind: _Optional[str] = ..., language: _Optional[str] = ...) -> None: ...
 
 class GetShowRequest(_message.Message):
     __slots__ = ("key",)

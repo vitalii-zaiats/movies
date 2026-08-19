@@ -29,6 +29,8 @@ class IngestEpisode(BaseModel):
     vod_id: int | None = None
     # Which dub this particular VOD carries, when the source said.
     audio: str | None = None
+    # And what language it is in, which the dub's name never says.
+    language: str | None = None
 
 
 class IngestRequest(BaseModel):
@@ -156,6 +158,7 @@ class TrackOut(ORMModel):
 
     vod_id: int
     audio: str | None
+    language: str | None = None
 
     @computed_field
     @property

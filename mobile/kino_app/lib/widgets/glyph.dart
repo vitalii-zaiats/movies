@@ -245,6 +245,17 @@ void _eyeShut(Path p) {
     ..lineTo(21, 3);
 }
 
+/// Filter: three rules, each shorter than the last.
+void _filter(Path p) {
+  p
+    ..moveTo(3, 6)
+    ..lineTo(21, 6)
+    ..moveTo(6, 12)
+    ..lineTo(18, 12)
+    ..moveTo(9, 18)
+    ..lineTo(15, 18);
+}
+
 /// Share: a box with the thing on its way out of the top.
 void _share(Path p) {
   p
@@ -289,6 +300,7 @@ abstract final class Glyphs {
   static const newPerson = GlyphSpec(_newPerson);
   static const eye = GlyphSpec(_eye);
   static const eyeShut = GlyphSpec(_eyeShut);
+  static const filter = GlyphSpec(_filter);
   static const share = GlyphSpec(_share);
   static const check = GlyphSpec(_check);
   static const dot = GlyphSpec(_dot);

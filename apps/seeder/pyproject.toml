@@ -5,6 +5,7 @@ description = "Loads crawled episodes into the VOD service and the catalogue"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "crawlers",
     "contracts",
     "grpcio>=1.68",
     "httpx>=0.28",
@@ -16,6 +17,7 @@ seed-crawled = "seeder.crawled:main"
 seed-collections = "seeder.collections:main"
 
 [tool.uv.sources]
+crawlers = { workspace = true }
 contracts = { workspace = true }
 
 [build-system]

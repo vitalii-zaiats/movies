@@ -75,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         appBar: AppBar(
           title: const Text('kino'),
           actions: [
+            _LanguageFilter(model: _model),
             TextButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
@@ -150,6 +151,51 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Browse.series => l10n.tabSeries,
         Browse.cartoons => l10n.tabCartoons,
       };
+}
+
+/// Which language to keep, as a menu rather than another row of chips: the tabs
+/// already own the horizontal band under the title, and a second one there would
+/// make the catalogue look like a settings screen.
+///
+/// The languages offered are the ones this app can name. A catalogue may hold
+/// others; naming them in a language the reader doesn't have would be worse
+/// than leaving them to "any".
+class _LanguageFilter extends StatelessWidget {
+  const _LanguageFilter({required this.model});
+
+  final HomeViewModel model;
+
+  static const _known = {'uk': 'Українська', 'en': 'English'};
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return PopupMenuButton<String?>(
+      tooltip: l10n.filterByLanguage,
+      icon: Glyph(Glyphs.filter, color: model.language == null ? palette.muted : palette.accent),
+      onSelected: model.spoken,
+      itemBuilder: (context) => [
+        PopupMenuItem(value: null, child: Text(l10n.anyLanguage)),
+        for (final entry in _known.entries)
+          PopupMenuItem(
+            value: entry.key,
+            child: Row(
+              children: [
+                Glyph(
+                  model.language == entry.key ? Glyphs.check : Glyphs.dot,
+                  size: 16,
+                  color: model.language == entry.key ? palette.accent : palette.faint,
+                ),
+                const SizedBox(width: 8),
+                Text(entry.value),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _SearchBar extends StatelessWidget {

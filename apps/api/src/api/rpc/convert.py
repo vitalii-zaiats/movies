@@ -165,7 +165,7 @@ def show_details(dto: ShowDetails) -> pb.ShowDetails:
 
 def track(dto: TrackOut) -> pb.Track:
     message = pb.Track(vod_id=dto.vod_id, playlist=dto.playlist)
-    _set(message, audio=dto.audio)
+    _set(message, audio=dto.audio, language=dto.language)
     return message
 
 

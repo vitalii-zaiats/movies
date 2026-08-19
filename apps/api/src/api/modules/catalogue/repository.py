@@ -8,7 +8,7 @@ answer, and it's greppable.
 from sqlalchemy import func, select
 
 from api.core.repository import Repository
-from api.modules.catalogue.models import Episode, Show
+from api.modules.catalogue.models import Episode, EpisodeTrack, Show
 
 
 class ShowRepository(Repository[Show]):
@@ -30,6 +30,7 @@ class ShowRepository(Repository[Show]):
         title_like: str | None = None,
         series: bool | None = None,
         kind: str | None = None,
+        language: str | None = None,
         order: str = "key",
         limit: int = 50,
         offset: int = 0,
@@ -65,6 +66,16 @@ class ShowRepository(Repository[Show]):
             query = query.where(episodes > 1 if series else episodes == 1)
         if kind:
             query = query.where(Show.kind == kind)
+        if language:
+            # "has at least one track in this language" — an EXISTS rather than a
+            # join, because joining tracks would return a show once per track and
+            # a page of twelve would hold four titles.
+            query = query.where(
+                select(EpisodeTrack.id)
+                .join(Episode, Episode.id == EpisodeTrack.episode_id)
+                .where(Episode.show_id == Show.id, EpisodeTrack.language == language)
+                .exists()
+            )
 
         total = await self.session.scalar(select(func.count()).select_from(query.subquery()))
         rows = await self.session.execute(query.order_by(*_show_order(order)).limit(limit).offset(offset))
@@ -100,6 +111,23 @@ class EpisodeRepository(Repository[Episode]):
     async def by_source_url(self, source_url: str) -> Episode | None:
         return await self.session.scalar(
             select(Episode).where(Episode.source_url == source_url)
+        )
+
+    async def by_number(self, show_id: int, season: int, episode: int) -> Episode | None:
+        """The episode at that place in the show, whatever page it came from.
+
+        A site can publish one episode twice — under a themed collection and
+        under its season folder — giving it two page URLs. It is still one
+        episode, and the schema says so with a unique key on these three
+        columns; this is how a second URL finds the row instead of colliding
+        with it.
+        """
+        return await self.session.scalar(
+            select(Episode).where(
+                Episode.show_id == show_id,
+                Episode.season == season,
+                Episode.episode == episode,
+            )
         )
 
     async def page(

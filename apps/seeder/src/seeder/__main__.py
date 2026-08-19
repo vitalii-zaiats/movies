@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from seeder.catalogue import CatalogueUnavailable, CatalogueWriter
+from seeder.language import spoken
 from seeder.records import ResolvedRecord, playable, read
 from seeder.vod import VodUnavailable, VodWriter
 
@@ -44,6 +45,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--batch", type=int, default=DEFAULT_BATCH, help=f"episodes per POST (default: {DEFAULT_BATCH})"
     )
     parser.add_argument("--limit", type=int, help="stop after this many episodes")
+    parser.add_argument(
+        "--language",
+        help="last resort for files that name no source; the crawler normally says",
+    )
     parser.add_argument(
         "--facts",
         type=Path,
@@ -124,15 +129,31 @@ async def seed(args: argparse.Namespace) -> int:
                 skipped += 1
                 continue
 
-            facts = carried(record, known.get(record["url"], record))
+            known_facts = known.get(record["url"], record)
+            facts = carried(record, known_facts)
+
             for playlist_url, dub in tracks:
                 # One VOD per voice. They play different bytes, so they are
                 # different playable things — and the dub travels with them,
                 # because the catalogue has no other way to learn it.
+                #
+                # The language travels the same way and for the same reason.
+                # Nothing downstream can work it out: the stream carries no tag
+                # and a dub's name is a studio, not a language. The crawler is
+                # the one that knows — see `seeder.language`.
+                language, original = spoken(record, known_facts, dub, args.language)
+                envelope = dict(facts)
+                if dub:
+                    envelope["audio"] = dub
+                if language:
+                    envelope["audio_language"] = language
+                if original:
+                    envelope["audio_original"] = True
+
                 ref = await vod.register(
                     playlist_url,
                     title=record.get("title"),
-                    facts={**facts, "audio": dub} if dub else facts,
+                    facts=envelope,
                 )
                 registered += int(ref.created)
 

@@ -147,8 +147,13 @@ message ShowDetails {
 // One way to hear an episode. More than one means somebody dubbed it twice.
 message Track {
   uint32 vod_id = 1;
+  // The studio, or the technique — "Le Doyen", "Багатоголосий закадровий".
   optional string audio = 2;
   string playlist = 3;
+  // What language it is in, ISO 639-1. Absent where nobody could say: an
+  // original soundtrack whose language the crawl never learned. The name above
+  // never answers this — a studio is not a language.
+  optional string language = 4;
 }
 
 message Episode {
@@ -241,6 +246,8 @@ message ListShowsRequest {
   // episodes — a cartoon and a film have the same shape and are not the same
   // thing, and only the source can tell them apart.
   optional string kind = 6;
+  // Only titles with a track in this language, ISO 639-1.
+  optional string language = 7;
 }
 
 message ListShowsResponse {
@@ -255,6 +262,7 @@ message StreamShowsRequest {
   // Stop after this many. Zero means the whole catalogue.
   uint32 limit = 4;
   optional string kind = 5;
+  optional string language = 6;
 }
 
 message GetShowRequest {

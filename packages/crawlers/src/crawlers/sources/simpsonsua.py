@@ -83,6 +83,8 @@ class Track(TypedDict):
 @register
 class SimpsonsUA(Source):
     name = "simpsonsua"
+    # Everything this site publishes is dubbed into Ukrainian.
+    language = "uk"
     paginated = False
     # The sitemap gives the numbering; only the page itself gives the dubs.
     item_pages = True

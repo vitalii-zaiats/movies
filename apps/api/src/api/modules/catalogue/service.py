@@ -66,11 +66,13 @@ class CatalogueService:
         limit: int,
         offset: int,
         kind: str | None = None,
+        language: str | None = None,
     ) -> tuple[list[tuple[Show, int, int]], int]:
         return await self.shows.page(
             title_like=title_like,
             series=series,
             kind=kind,
+            language=language,
             order=order,
             limit=limit,
             offset=offset,
@@ -252,7 +254,15 @@ class CatalogueService:
                     show.poster = item.show_poster
                 known[item.show_key] = show
 
-            episode = await self.episodes.by_source_url(item.source_url)
+            # By URL first, because that is what a re-seed of the same page is
+            # idempotent on. Then by number: the same episode can arrive under a
+            # second URL — a themed collection beside the season folder — and it
+            # is the same episode, which is what the unique key on (show,
+            # season, episode) has always said. Without this the second copy
+            # takes the whole sync down with an integrity error.
+            episode = await self.episodes.by_source_url(item.source_url) or (
+                await self.episodes.by_number(show.id, item.season, item.episode)
+            )
             if episode is None:
                 # Built complete before it's added: `title`, `season` and
                 # `episode` are NOT NULL, so a half-filled row can't survive the
@@ -273,12 +283,14 @@ class CatalogueService:
                 report.updated += 1
 
             if item.vod_id is not None:
-                await self._track(episode, item.vod_id, item.audio)
+                await self._track(episode, item.vod_id, item.audio, item.language)
 
         await self.session.commit()
         return report
 
-    async def _track(self, episode: Episode, vod_id: int, audio: str | None) -> None:
+    async def _track(
+        self, episode: Episode, vod_id: int, audio: str | None, language: str | None = None
+    ) -> None:
         """Remember that this VOD is one way to hear this episode.
 
         A second dub is a second row, not a replacement: the episode keeps the
@@ -288,12 +300,41 @@ class CatalogueService:
         existing = await self.session.scalar(
             select(EpisodeTrack).where(EpisodeTrack.vod_id == vod_id)
         )
+
+        # A voice, not a URL. These sources hand out playlist links that rotate:
+        # resolve the same episode twice and the same dub comes back under a new
+        # address, which registers as a new VOD. Keyed on the id alone, every
+        # re-seed would hang another "Стругачка" on the episode until the player
+        # offered the same voice four times, three of them dead.
+        #
+        # So a named voice that is already here keeps its row and points at the
+        # newer stream. An unnamed one can't be matched this way — two nameless
+        # streams may be two different things — and stays keyed on the id.
+        if existing is None and audio:
+            existing = await self.session.scalar(
+                select(EpisodeTrack).where(
+                    EpisodeTrack.episode_id == episode.id, EpisodeTrack.audio == audio
+                )
+            )
+            if existing is not None:
+                # The episode's default follows the track it was pointing at.
+                if episode.vod_id == existing.vod_id:
+                    episode.vod_id = vod_id
+                existing.vod_id = vod_id
+
         if existing is None:
             self.session.add(
-                EpisodeTrack(episode_id=episode.id, vod_id=vod_id, audio=audio)
+                EpisodeTrack(
+                    episode_id=episode.id, vod_id=vod_id, audio=audio, language=language
+                )
             )
-        elif audio and existing.audio != audio:
-            existing.audio = audio
+        else:
+            # Only ever fills in: a re-seed that has learned the language should
+            # add it, and one that has forgotten it should not erase it.
+            if audio and existing.audio != audio:
+                existing.audio = audio
+            if language and existing.language != language:
+                existing.language = language
 
         if episode.vod_id is None:
             episode.vod_id = vod_id
@@ -327,6 +368,7 @@ def _from_vod(vod: Any) -> tuple[IngestEpisode, IngestShow | None] | None:
         source_url=str(source_url),
         vod_id=int(vod.id),
         audio=blob.get("audio"),
+        language=blob.get("audio_language"),
     )
 
     # Everything else is about the title rather than the stream. Absent keys stay

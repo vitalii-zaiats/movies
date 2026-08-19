@@ -455,16 +455,27 @@ const Track$json = {
     {'1': 'vod_id', '3': 1, '4': 1, '5': 13, '10': 'vodId'},
     {'1': 'audio', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'audio', '17': true},
     {'1': 'playlist', '3': 3, '4': 1, '5': 9, '10': 'playlist'},
+    {
+      '1': 'language',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'language',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_audio'},
+    {'1': '_language'},
   ],
 };
 
 /// Descriptor for `Track`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List trackDescriptor = $convert.base64Decode(
     'CgVUcmFjaxIVCgZ2b2RfaWQYASABKA1SBXZvZElkEhkKBWF1ZGlvGAIgASgJSABSBWF1ZGlviA'
-    'EBEhoKCHBsYXlsaXN0GAMgASgJUghwbGF5bGlzdEIICgZfYXVkaW8=');
+    'EBEhoKCHBsYXlsaXN0GAMgASgJUghwbGF5bGlzdBIfCghsYW5ndWFnZRgEIAEoCUgBUghsYW5n'
+    'dWFnZYgBAUIICgZfYXVkaW9CCwoJX2xhbmd1YWdl');
 
 @$core.Deprecated('Use episodeDescriptor instead')
 const Episode$json = {
@@ -646,11 +657,21 @@ const ListShowsRequest$json = {
     {'1': 'limit', '3': 4, '4': 1, '5': 13, '10': 'limit'},
     {'1': 'offset', '3': 5, '4': 1, '5': 13, '10': 'offset'},
     {'1': 'kind', '3': 6, '4': 1, '5': 9, '9': 2, '10': 'kind', '17': true},
+    {
+      '1': 'language',
+      '3': 7,
+      '4': 1,
+      '5': 9,
+      '9': 3,
+      '10': 'language',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_q'},
     {'1': '_series'},
     {'1': '_kind'},
+    {'1': '_language'},
   ],
 };
 
@@ -659,7 +680,8 @@ final $typed_data.Uint8List listShowsRequestDescriptor = $convert.base64Decode(
     'ChBMaXN0U2hvd3NSZXF1ZXN0EhEKAXEYASABKAlIAFIBcYgBARIbCgZzZXJpZXMYAiABKAhIAV'
     'IGc2VyaWVziAEBEi0KBW9yZGVyGAMgASgOMhcuY2F0YWxvZ3VlLnYxLlNob3dPcmRlclIFb3Jk'
     'ZXISFAoFbGltaXQYBCABKA1SBWxpbWl0EhYKBm9mZnNldBgFIAEoDVIGb2Zmc2V0EhcKBGtpbm'
-    'QYBiABKAlIAlIEa2luZIgBAUIECgJfcUIJCgdfc2VyaWVzQgcKBV9raW5k');
+    'QYBiABKAlIAlIEa2luZIgBARIfCghsYW5ndWFnZRgHIAEoCUgDUghsYW5ndWFnZYgBAUIECgJf'
+    'cUIJCgdfc2VyaWVzQgcKBV9raW5kQgsKCV9sYW5ndWFnZQ==');
 
 @$core.Deprecated('Use listShowsResponseDescriptor instead')
 const ListShowsResponse$json = {
@@ -706,11 +728,21 @@ const StreamShowsRequest$json = {
     },
     {'1': 'limit', '3': 4, '4': 1, '5': 13, '10': 'limit'},
     {'1': 'kind', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'kind', '17': true},
+    {
+      '1': 'language',
+      '3': 6,
+      '4': 1,
+      '5': 9,
+      '9': 3,
+      '10': 'language',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_q'},
     {'1': '_series'},
     {'1': '_kind'},
+    {'1': '_language'},
   ],
 };
 
@@ -718,8 +750,9 @@ const StreamShowsRequest$json = {
 final $typed_data.Uint8List streamShowsRequestDescriptor = $convert.base64Decode(
     'ChJTdHJlYW1TaG93c1JlcXVlc3QSEQoBcRgBIAEoCUgAUgFxiAEBEhsKBnNlcmllcxgCIAEoCE'
     'gBUgZzZXJpZXOIAQESLQoFb3JkZXIYAyABKA4yFy5jYXRhbG9ndWUudjEuU2hvd09yZGVyUgVv'
-    'cmRlchIUCgVsaW1pdBgEIAEoDVIFbGltaXQSFwoEa2luZBgFIAEoCUgCUgRraW5kiAEBQgQKAl'
-    '9xQgkKB19zZXJpZXNCBwoFX2tpbmQ=');
+    'cmRlchIUCgVsaW1pdBgEIAEoDVIFbGltaXQSFwoEa2luZBgFIAEoCUgCUgRraW5kiAEBEh8KCG'
+    'xhbmd1YWdlGAYgASgJSANSCGxhbmd1YWdliAEBQgQKAl9xQgkKB19zZXJpZXNCBwoFX2tpbmRC'
+    'CwoJX2xhbmd1YWdl');
 
 @$core.Deprecated('Use getShowRequestDescriptor instead')
 const GetShowRequest$json = {

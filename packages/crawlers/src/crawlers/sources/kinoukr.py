@@ -136,6 +136,8 @@ class Movie(TypedDict, total=False):
 @register
 class Kinoukr(Source):
     name = "kinoukr"
+    # Everything this site publishes is dubbed into Ukrainian.
+    language = "uk"
     # Every card links to a film page, and that page is where the data is.
     item_pages = True
 

@@ -294,4 +294,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get defaultVoice => 'As published';
+
+  @override
+  String get anyLanguage => 'Any language';
+
+  @override
+  String get filterByLanguage => 'Filter by language';
 }

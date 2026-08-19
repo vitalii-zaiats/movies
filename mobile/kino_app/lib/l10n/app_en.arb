@@ -203,5 +203,7 @@
     }
   },
   "voice": "Voice",
-  "defaultVoice": "As published"
+  "defaultVoice": "As published",
+  "anyLanguage": "Any language",
+  "filterByLanguage": "Filter by language"
 }
