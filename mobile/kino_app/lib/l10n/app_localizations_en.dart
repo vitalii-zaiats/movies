@@ -264,4 +264,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get remoteHint =>
       'OK — play or pause · ◀ ▶ — 10 seconds · Back — leave';
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String shareText(String title, String url) {
+    return '$title — $url';
+  }
 }

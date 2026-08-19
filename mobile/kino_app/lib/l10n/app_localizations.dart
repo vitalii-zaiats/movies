@@ -523,6 +523,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK — play or pause · ◀ ▶ — 10 seconds · Back — leave'**
   String get remoteHint;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @shareText.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} — {url}'**
+  String shareText(String title, String url);
 }
 
 class _AppLocalizationsDelegate

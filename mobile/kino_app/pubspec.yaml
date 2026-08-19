@@ -21,6 +21,7 @@ dependencies:
   # One preference — which theme — kept between launches.
   shared_preferences: ^2.5.0
   cupertino_icons: ^1.0.8
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:

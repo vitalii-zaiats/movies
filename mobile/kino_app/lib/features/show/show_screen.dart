@@ -13,6 +13,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:kino_api/kino_api.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/async_value.dart';
 import '../../core/formatting.dart';
@@ -147,6 +148,7 @@ class _Detail extends StatelessWidget {
                   child: Text(show.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
                 actions: [
+                  _ShareAction(show: show),
                   if (detail.episodes.length > 1)
                     IconButton(
                       tooltip: l10n.queueWholeShow,
@@ -165,6 +167,43 @@ class _Detail extends StatelessWidget {
           SliverToBoxAdapter(child: _Sheet(detail: detail)),
         ],
       ),
+    );
+  }
+}
+
+/// Hand this title to somebody else.
+///
+/// What gets shared is the web app's page for it — `/shows/<key>` on the same
+/// stack this app talks to — because a link somebody can open is worth sending
+/// and a title on its own is not. A phone-only deep link would be worse: most
+/// people receiving it don't have this app.
+class _ShareAction extends StatelessWidget {
+  const _ShareAction({required this.show});
+
+  final Show show;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return IconButton(
+      tooltip: l10n.share,
+      icon: const Glyph(Glyphs.share),
+      onPressed: () {
+        final box = context.findRenderObject() as RenderBox?;
+
+        SharePlus.instance.share(
+          ShareParams(
+            text: l10n.shareText(show.title, '$httpBase/shows/${show.key}'),
+            subject: show.title,
+            // Where the sheet points on an iPad, which has no idea otherwise
+            // and used to crash for the lack of it.
+            sharePositionOrigin: box == null
+                ? null
+                : box.localToGlobal(Offset.zero) & box.size,
+          ),
+        );
+      },
     );
   }
 }

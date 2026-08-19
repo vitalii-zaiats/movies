@@ -245,6 +245,22 @@ void _eyeShut(Path p) {
     ..lineTo(21, 3);
 }
 
+/// Share: a box with the thing on its way out of the top.
+void _share(Path p) {
+  p
+    ..moveTo(7, 10)
+    ..lineTo(4, 10)
+    ..lineTo(4, 21)
+    ..lineTo(20, 21)
+    ..lineTo(20, 10)
+    ..lineTo(17, 10)
+    ..moveTo(12, 3)
+    ..lineTo(12, 15)
+    ..moveTo(7, 8)
+    ..lineTo(12, 3)
+    ..lineTo(17, 8);
+}
+
 void _check(Path p) {
   p
     ..moveTo(4, 12)
@@ -273,6 +289,7 @@ abstract final class Glyphs {
   static const newPerson = GlyphSpec(_newPerson);
   static const eye = GlyphSpec(_eye);
   static const eyeShut = GlyphSpec(_eyeShut);
+  static const share = GlyphSpec(_share);
   static const check = GlyphSpec(_check);
   static const dot = GlyphSpec(_dot);
 }

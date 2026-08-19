@@ -353,7 +353,7 @@ class _ShowRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: body(11, weight: 700, color: palette.muted),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 10),
                     if (summary.genres.isNotEmpty)
                       // Language-neutral keys on the wire; named here, in the
                       // reader's language. Clipped rather than wrapped — a row

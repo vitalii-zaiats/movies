@@ -1,51 +1,98 @@
 {
   "@@locale": "en",
-
   "searchHint": "Search titles",
   "tabAll": "All",
   "tabFilms": "Films",
   "tabSeries": "Series",
   "tabCartoons": "Cartoons",
-
   "continueWatching": "Continue watching",
   "newest": "Newest",
   "found": "Found",
   "sectionCount": "{title} · {count}",
   "@sectionCount": {
-    "placeholders": { "title": {"type": "String"}, "count": {"type": "int"} }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "nothingHere": "nothing here",
   "shownOfTotal": "{shown} of {total}",
   "@shownOfTotal": {
-    "placeholders": { "shown": {"type": "int"}, "total": {"type": "int"} }
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
-
   "film": "film",
   "filmNoStream": "film · no stream",
   "episodesAndPlayable": "{count} episodes · {playable} playable",
   "@episodesAndPlayable": {
-    "placeholders": { "count": {"type": "int"}, "playable": {"type": "int"} }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "playable": {
+        "type": "int"
+      }
+    }
   },
-
   "play": "Play",
   "playEpisode": "Play {code}",
-  "@playEpisode": { "placeholders": { "code": {"type": "String"} } },
+  "@playEpisode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "nothingToPlayYet": "Nothing to play yet",
   "episodeCount": "{count, plural, =1{1 episode} other{{count} episodes}}",
-  "@episodeCount": { "placeholders": { "count": {"type": "int"} } },
+  "@episodeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noStream": "No stream",
   "voiceCount": "{count, plural, =1{1 voice} other{{count} voices}}",
-  "@voiceCount": { "placeholders": { "count": {"type": "int"} } },
+  "@voiceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "queueWholeShow": "Queue the whole show",
   "queued": "Queued “{name}” · {count}",
   "@queued": {
-    "placeholders": { "name": {"type": "String"}, "count": {"type": "int"} }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "imdbVotes": "IMDb · {votes} votes",
-  "@imdbVotes": { "placeholders": { "votes": {"type": "int"} } },
+  "@imdbVotes": {
+    "placeholders": {
+      "votes": {
+        "type": "int"
+      }
+    }
+  },
   "directedBy": "Directed by",
   "starring": "Starring",
-
   "account": "Account",
   "guest": "Guest",
   "labelEmail": "Email",
@@ -55,35 +102,49 @@
   "labelLastSeen": "Last seen",
   "roleAdmin": "admin",
   "roleUser": "user",
-
   "yourName": "Your name",
   "displayName": "Display name",
   "save": "Save",
   "renamed": "Now known as {name}.",
-  "@renamed": { "placeholders": { "name": {"type": "String"} } },
-
+  "@renamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "createAnAccount": "Create an account",
   "createAccountBlurb": "Keeps everything you have watched — the email and password are written onto this same account.",
   "createAccount": "Create account",
   "accountCreated": "Account created for {email}.",
-  "@accountCreated": { "placeholders": { "email": {"type": "String"} } },
+  "@accountCreated": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "alreadyHaveOne": "Already have one",
   "signInBlurb": "Signing in swaps this device to that account. The guest you are now stays where it is.",
   "signIn": "Sign in",
   "signedInAs": "Signed in as {name}.",
-  "@signedInAs": { "placeholders": { "name": {"type": "String"} } },
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "password": "Password",
   "fieldRequired": "Required",
   "notAnEmail": "Doesn’t look like an email",
   "shortPassword": "At least eight characters",
-
   "appearance": "Appearance",
   "themeSystem": "System",
   "themeLight": "Light",
   "themeDark": "Dark",
   "language": "Language",
   "languageSystem": "System",
-
   "thisDevice": "This device",
   "signOut": "Sign out",
   "signOutBlurb": "Back to being a guest on this device.",
@@ -91,16 +152,38 @@
   "watchAsSomebodyElse": "Watch as somebody else",
   "watchAsBlurb": "A second identity on this device, with its own history.",
   "nowWatchingAs": "Now watching as {name}.",
-  "@nowWatchingAs": { "placeholders": { "name": {"type": "String"} } },
-
+  "@nowWatchingAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "couldntReach": "Couldn’t reach the catalogue",
   "triedAddress": "tried {address}",
-  "@triedAddress": { "placeholders": { "address": {"type": "String"} } },
+  "@triedAddress": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
   "tryAgain": "Try again",
-
   "sourceDidntAnswer": "The source didn’t answer",
   "upstreamRefused": "The stream is registered, but the host behind it returned 502. Worth trying again later.",
   "nothingToPlay": "Nothing to play",
   "neverPackaged": "This episode was never packaged.",
-  "remoteHint": "OK — play or pause · ◀ ▶ — 10 seconds · Back — leave"
+  "remoteHint": "OK — play or pause · ◀ ▶ — 10 seconds · Back — leave",
+  "share": "Share",
+  "shareText": "{title} — {url}",
+  "@shareText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  }
 }

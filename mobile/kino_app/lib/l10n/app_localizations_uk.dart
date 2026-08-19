@@ -267,4 +267,12 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get remoteHint => 'OK — пауза · ◀ ▶ — 10 секунд · Назад — вийти';
+
+  @override
+  String get share => 'Поділитись';
+
+  @override
+  String shareText(String title, String url) {
+    return '$title — $url';
+  }
 }
