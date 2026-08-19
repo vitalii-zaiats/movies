@@ -79,6 +79,28 @@ class AccountsClient extends $grpc.Client {
     return $createUnaryCall(_$rename, request, options: options);
   }
 
+  /// Signing in a device that has no keyboard.
+  ///
+  /// A television asks for a code, shows it (as a QR, usually), and waits. A
+  /// phone opens that code in a browser and approves it as whoever is signed in
+  /// there. Then the television collects a session of its own.
+  ///
+  /// Approval is deliberately not here: it happens in a browser, where somebody
+  /// is already signed in and can see what they are agreeing to.
+  $grpc.ResponseFuture<$0.DeviceLink> startDeviceLink(
+    $0.StartDeviceLinkRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$startDeviceLink, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.DeviceSession> collectDeviceLink(
+    $0.CollectDeviceLinkRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$collectDeviceLink, request, options: options);
+  }
+
   // method descriptors
 
   static final _$whoAmI = $grpc.ClientMethod<$0.WhoAmIRequest, $0.Identity>(
@@ -107,6 +129,16 @@ class AccountsClient extends $grpc.Client {
       '/catalogue.v1.Accounts/Rename',
       ($0.RenameRequest value) => value.writeToBuffer(),
       $0.User.fromBuffer);
+  static final _$startDeviceLink =
+      $grpc.ClientMethod<$0.StartDeviceLinkRequest, $0.DeviceLink>(
+          '/catalogue.v1.Accounts/StartDeviceLink',
+          ($0.StartDeviceLinkRequest value) => value.writeToBuffer(),
+          $0.DeviceLink.fromBuffer);
+  static final _$collectDeviceLink =
+      $grpc.ClientMethod<$0.CollectDeviceLinkRequest, $0.DeviceSession>(
+          '/catalogue.v1.Accounts/CollectDeviceLink',
+          ($0.CollectDeviceLinkRequest value) => value.writeToBuffer(),
+          $0.DeviceSession.fromBuffer);
 }
 
 @$pb.GrpcServiceName('catalogue.v1.Accounts')
@@ -156,6 +188,23 @@ abstract class AccountsServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.RenameRequest.fromBuffer(value),
         ($0.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.StartDeviceLinkRequest, $0.DeviceLink>(
+        'StartDeviceLink',
+        startDeviceLink_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.StartDeviceLinkRequest.fromBuffer(value),
+        ($0.DeviceLink value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.CollectDeviceLinkRequest, $0.DeviceSession>(
+            'CollectDeviceLink',
+            collectDeviceLink_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.CollectDeviceLinkRequest.fromBuffer(value),
+            ($0.DeviceSession value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.Identity> whoAmI_Pre(
@@ -205,6 +254,22 @@ abstract class AccountsServiceBase extends $grpc.Service {
 
   $async.Future<$0.User> rename(
       $grpc.ServiceCall call, $0.RenameRequest request);
+
+  $async.Future<$0.DeviceLink> startDeviceLink_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.StartDeviceLinkRequest> $request) async {
+    return startDeviceLink($call, await $request);
+  }
+
+  $async.Future<$0.DeviceLink> startDeviceLink(
+      $grpc.ServiceCall call, $0.StartDeviceLinkRequest request);
+
+  $async.Future<$0.DeviceSession> collectDeviceLink_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.CollectDeviceLinkRequest> $request) async {
+    return collectDeviceLink($call, await $request);
+  }
+
+  $async.Future<$0.DeviceSession> collectDeviceLink(
+      $grpc.ServiceCall call, $0.CollectDeviceLinkRequest request);
 }
 
 @$pb.GrpcServiceName('catalogue.v1.Catalogue')

@@ -12,6 +12,7 @@ import type {
   Health,
   HistoryEntry,
   HistoryPage,
+  DeviceLinkStatus,
   Identity,
   Playlist,
   PlaylistDetail,
@@ -62,6 +63,11 @@ export function createHttpClient(baseURL: string): CatalogueClient {
     signOut: async () => {
       await call('/auth/logout', { method: 'POST' })
     },
+
+    deviceLink: (code) => call<DeviceLinkStatus>(`/auth/device/${encodeURIComponent(code)}`),
+
+    approveDevice: (code) =>
+      call<DeviceLinkStatus>('/auth/device/approve', { method: 'POST', body: { code } }),
 
     progress: async (episodeId) => {
       try {

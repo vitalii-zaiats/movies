@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     # got it. Claiming an account doesn't shorten it: same row, same login.
     session_ttl_days: int = 365
     session_cookie: str = "kino_session"
+    # Where a phone goes to approve a television. A path, not a host, for the
+    # same reason `vod_base` is one: the server doesn't know what address this
+    # install is reached on, and whatever drew the QR does.
+    link_base: str = "/link"
     # Off by default because the LAN stack is plain http behind nginx. Turn it
     # on the day this sits behind real TLS.
     session_cookie_secure: bool = False

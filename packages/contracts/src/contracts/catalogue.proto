@@ -60,6 +60,44 @@ service Accounts {
   rpc Login(LoginRequest) returns (Identity);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc Rename(RenameRequest) returns (User);
+
+  // Signing in a device that has no keyboard.
+  //
+  // A television asks for a code, shows it (as a QR, usually), and waits. A
+  // phone opens that code in a browser and approves it as whoever is signed in
+  // there. Then the television collects a session of its own.
+  //
+  // Approval is deliberately not here: it happens in a browser, where somebody
+  // is already signed in and can see what they are agreeing to.
+  rpc StartDeviceLink(StartDeviceLinkRequest) returns (DeviceLink);
+  rpc CollectDeviceLink(CollectDeviceLinkRequest) returns (DeviceSession);
+}
+
+message StartDeviceLinkRequest {
+  // What to show the person approving: "Android TV", "kino on macOS".
+  optional string device_name = 1;
+}
+
+message DeviceLink {
+  // Short, unambiguous, and meant to be read off a screen.
+  string code = 1;
+  // Never leaves this device: the only thing that can collect the session.
+  string secret = 2;
+  // Where the phone should go, as a path — the server has no idea what address
+  // this install was reached on, and the client drawing the QR does.
+  string verify_path = 3;
+  uint32 expires_in = 4;
+}
+
+message CollectDeviceLinkRequest {
+  string secret = 1;
+}
+
+message DeviceSession {
+  // False means "not yet", which is the ordinary answer while somebody walks
+  // to their phone — not an error, and not worth a status code.
+  bool linked = 1;
+  Identity identity = 2;
 }
 
 message WhoAmIRequest {}

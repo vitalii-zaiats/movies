@@ -313,4 +313,54 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get startAgain => 'Спочатку';
+
+  @override
+  String get welcome => 'Вітаємо';
+
+  @override
+  String get welcomeBlurb =>
+      'Реєструватися не треба. Каталог видає цьому пристрою власну особу, і з першої ж стрічки памʼятає, що ви дивилися.';
+
+  @override
+  String get continueAsGuest => 'Продовжити як гість';
+
+  @override
+  String get signInOnAnotherDevice => 'Увійти з телефона';
+
+  @override
+  String get signInOnAnotherDeviceBlurb =>
+      'Набирати пароль пультом — мука. Краще відскануйте код і підтвердьте там, де є клавіатура.';
+
+  @override
+  String get scanThis => 'Відскануйте телефоном';
+
+  @override
+  String orOpen(String url) {
+    return 'Або відкрийте $url і введіть код';
+  }
+
+  @override
+  String codeExpiresIn(String time) {
+    return 'лишилось $time';
+  }
+
+  @override
+  String get codeExpired => 'Код збіг — вони живуть десять хвилин.';
+
+  @override
+  String get askForNewCode => 'Новий код';
+
+  @override
+  String get waitingForPhone => 'Чекаємо на телефон…';
+
+  @override
+  String get notNow => 'Не зараз';
+
+  @override
+  String get linkDevice => 'Прив\'язати пристрій';
+
+  @override
+  String linkedAs(String name) {
+    return 'Ви увійшли як $name';
+  }
 }

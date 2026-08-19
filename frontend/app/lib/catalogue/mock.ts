@@ -8,6 +8,7 @@
 import { CatalogueError, type CatalogueClient } from './client'
 import { fixtures } from './fixtures'
 import type {
+  DeviceLinkStatus,
   EpisodePage,
   EpisodeQuery,
   EpisodeWithShow,
@@ -223,6 +224,16 @@ export function createMockClient(): CatalogueClient {
       watched.clear()
       await answer(null)
     },
+
+    // The fixtures can't have a television waiting on the other end, so an
+    // unknown code is the honest answer to everything except the one below.
+    deviceLink: (code: string): Promise<DeviceLinkStatus> =>
+      code.toUpperCase() === 'DEMO42'
+        ? answer({ code: 'DEMO42', device_name: 'Android TV (fixture)', approved: false, expires_in: 600 })
+        : Promise.reject(new CatalogueError('no such code', 404)),
+
+    approveDevice: (code: string): Promise<DeviceLinkStatus> =>
+      answer({ code: code.toUpperCase(), device_name: 'Android TV (fixture)', approved: true, expires_in: 600 }),
 
     progress: (episodeId: number): Promise<Progress | null> =>
       answer(watched.get(episodeId) ?? null),

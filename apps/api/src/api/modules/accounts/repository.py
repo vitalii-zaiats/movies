@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import delete, func, select
 
 from api.core.repository import Repository
-from api.modules.accounts.models import AuthSession, Role, User
+from api.modules.accounts.models import AuthSession, DeviceLink, Role, User
 
 
 class UserRepository(Repository[User]):
@@ -65,4 +65,29 @@ class SessionRepository(Repository[AuthSession]):
         result = await self.session.execute(
             delete(AuthSession).where(AuthSession.expires_at < before)
         )
+        return result.rowcount or 0
+
+
+class DeviceLinkRepository(Repository[DeviceLink]):
+    model = DeviceLink
+
+    async def by_code(self, code: str) -> DeviceLink | None:
+        """Case-folded: the code is read off a screen and typed by a person."""
+        return await self.session.scalar(
+            select(DeviceLink).where(DeviceLink.code == code.strip().upper())
+        )
+
+    async def by_secret(self, digest: str) -> DeviceLink | None:
+        return await self.session.scalar(
+            select(DeviceLink).where(DeviceLink.secret_digest == digest)
+        )
+
+    async def sweep(self, now: datetime) -> int:
+        """Forget the ones nobody finished. They are useless the moment they
+        expire, and a table of dead codes is a table somebody eventually
+        brute-forces."""
+        result = await self.session.execute(
+            delete(DeviceLink).where(DeviceLink.expires_at < now)
+        )
+        await self.session.commit()
         return result.rowcount or 0

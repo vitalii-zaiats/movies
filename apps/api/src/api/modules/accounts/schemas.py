@@ -55,3 +55,46 @@ class RoleRequest(BaseModel):
 
 class UserPage(Page):
     items: list[UserOut]
+
+
+class DeviceLinkOut(BaseModel):
+    """What a television is told when it asks to be signed in.
+
+    `verify_path` rather than a URL, like `vod_base` and `media_base`: the
+    server has no idea what address this install is reached on, and the client
+    that drew the QR does.
+    """
+
+    code: str
+    secret: str
+    verify_path: str
+    expires_in: int
+
+
+class DeviceLinkStatus(BaseModel):
+    """What the phone is about to approve, before it approves it."""
+
+    code: str
+    device_name: str | None
+    approved: bool
+    expires_in: int
+
+
+class DeviceApproval(BaseModel):
+    code: str
+
+
+class DeviceCollect(BaseModel):
+    secret: str
+
+
+class DeviceSession(BaseModel):
+    """Not yet, or here you go.
+
+    `pending` is the ordinary answer for as long as somebody is walking to their
+    phone, so it is a status rather than an error — a television polling this
+    should not have to read 404s to know it is still waiting.
+    """
+
+    status: str
+    identity: Identity | None = None

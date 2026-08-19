@@ -189,6 +189,46 @@ class KinoClient {
   Future<User> rename(String displayName) =>
       _unary(accounts.rename(RenameRequest(displayName: displayName), options: _options));
 
+  // --- signing in without a keyboard ----------------------------------------
+  //
+  // Typing an email with a remote is miserable, so a television doesn't. It
+  // asks for a code, shows it, and waits; a phone opens that code in a browser
+  // and approves it as whoever is signed in there.
+
+  /// Begin. [deviceName] is what the person approving will read — say what the
+  /// thing in the room is ("Android TV"), not what the binary is called.
+  Future<DeviceLink> startLink({String? deviceName}) {
+    final request = StartDeviceLinkRequest();
+    if (deviceName != null && deviceName.isNotEmpty) request.deviceName = deviceName;
+    return _unary(accounts.startDeviceLink(request, options: _options));
+  }
+
+  /// Has anybody said yes yet? Null means "not yet", which is the ordinary
+  /// answer for as long as somebody is walking to their phone.
+  ///
+  /// Anything else — an expired request, a second collection, a secret that
+  /// isn't one — arrives as a [GrpcError], because each of those means stop
+  /// asking rather than ask again.
+  Future<User?> collectLink(String secret) async {
+    final session = await _unary(
+      accounts.collectDeviceLink(CollectDeviceLinkRequest(secret: secret), options: _options),
+    );
+    if (!session.linked) return null;
+
+    // This is the moment the device stops being whoever it was. Saving the
+    // token here rather than trusting the metadata keeps that explicit.
+    await _tokens.save(session.identity.token);
+    return session.identity.user;
+  }
+
+  /// Where the phone should go — the thing to put in the QR.
+  ///
+  /// The server answers with a path, as it does for posters and streams: it has
+  /// no idea what address this stack is reachable on. Which means the QR is
+  /// only as scannable as [mediaBase] is reachable from the phone — an address
+  /// on the LAN, not a loopback that only the emulator's host understands.
+  Uri? linkUrl(DeviceLink link) => resolve(link.verifyPath);
+
   // --- browsing -------------------------------------------------------------
 
   Future<HealthResponse> health() =>

@@ -29,3 +29,7 @@ export 'src/generated/contracts/catalogue.pb.dart';
 export 'src/generated/contracts/catalogue.pbgrpc.dart'
     show AccountsClient, CatalogueClient, PlaylistsClient, WatchingClient;
 export 'src/tokens.dart';
+// How this package refuses. A screen that wants to tell "not found" apart from
+// "the network went away" has to name the type, and making it import grpc for
+// that would leak the transport into every caller's pubspec.
+export 'package:grpc/grpc.dart' show GrpcError, StatusCode;

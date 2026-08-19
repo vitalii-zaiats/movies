@@ -10,10 +10,12 @@ import grpc
 from contracts import catalogue_pb2 as pb
 from contracts import catalogue_pb2_grpc as stubs
 
+from api.core.models import utcnow
 from api.modules.accounts.schemas import UserOut
 from api.modules.accounts.service import Credential
 from api.rpc import convert
 from api.rpc.calls import call, user_agent
+from api.settings import settings
 
 
 async def _identity(rpc, credential: Credential) -> pb.Identity:  # type: ignore[no-untyped-def]
@@ -94,3 +96,46 @@ class AccountsService(stubs.AccountsServicer):
         async with call(context) as rpc:
             user = await rpc.services.accounts.rename(await rpc.user(), request.display_name)
             return convert.user(UserOut.model_validate(user))
+
+    async def StartDeviceLink(
+        self, request: pb.StartDeviceLinkRequest, context: grpc.aio.ServicerContext
+    ) -> pb.DeviceLink:
+        """Ask to be signed in by somebody holding a phone.
+
+        No identity required, and that is the point: the device asking has no
+        keyboard and nobody has typed anything yet.
+        """
+        name = request.device_name if request.HasField("device_name") else user_agent(context)
+        async with call(context) as rpc:
+            link = await rpc.services.accounts.start_link(device_name=name)
+
+        return pb.DeviceLink(
+            code=link.code,
+            secret=link.secret,
+            verify_path=f"{settings.link_base.rstrip('/')}?code={link.code}",
+            expires_in=max(0, int((link.expires_at - utcnow()).total_seconds())),
+        )
+
+    async def CollectDeviceLink(
+        self, request: pb.CollectDeviceLinkRequest, context: grpc.aio.ServicerContext
+    ) -> pb.DeviceSession:
+        """Has anybody said yes yet?
+
+        `linked = false` is the ordinary answer, not a refusal. The refusals —
+        an unknown device, an expired request, one already collected — come back
+        as status codes, because each of them means "stop asking".
+        """
+        async with call(context) as rpc:
+            credential = await rpc.services.accounts.collect_link(
+                request.secret, user_agent=user_agent(context)
+            )
+            if credential is None:
+                return pb.DeviceSession(linked=False)
+
+            await rpc.issue(credential.token)
+            return pb.DeviceSession(
+                linked=True,
+                identity=convert.identity(
+                    credential.token, UserOut.model_validate(credential.user)
+                ),
+            )

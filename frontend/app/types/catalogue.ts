@@ -150,6 +150,19 @@ export interface Identity {
   user: User
 }
 
+/**
+ * A device asking to be signed in, as seen by the browser about to say yes.
+ *
+ * No secret here on purpose. The code is enough to *approve*; collecting the
+ * session needs the secret, which never leaves the device that asked.
+ */
+export interface DeviceLinkStatus {
+  code: string
+  device_name: string | null
+  approved: boolean
+  expires_in: number
+}
+
 export interface Progress {
   episode_id: number
   position_seconds: number

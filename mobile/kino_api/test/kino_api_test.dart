@@ -62,6 +62,33 @@ class _FakeAccounts extends AccountsServiceBase {
   @override
   Future<User> rename(ServiceCall call, RenameRequest request) async =>
       throw UnimplementedError();
+
+  /// Flipped by the test to stand in for somebody approving on their phone.
+  bool approved = false;
+
+  @override
+  Future<DeviceLink> startDeviceLink(ServiceCall call, StartDeviceLinkRequest request) async =>
+      DeviceLink(
+        code: 'GXSNPT',
+        secret: 'kept-on-the-television',
+        verifyPath: '/link?code=GXSNPT',
+        expiresIn: 600,
+      );
+
+  @override
+  Future<DeviceSession> collectDeviceLink(
+    ServiceCall call,
+    CollectDeviceLinkRequest request,
+  ) async {
+    if (!approved) return DeviceSession(linked: false);
+
+    call.headers?[sessionMetadata] = 'linked-token';
+    call.sendHeaders();
+    return DeviceSession(
+      linked: true,
+      identity: Identity(token: 'linked-token', user: _guest),
+    );
+  }
 }
 
 class _FakeWatching extends WatchingServiceBase {
@@ -141,6 +168,22 @@ void main() {
 
   test('never watched is an answer, not a failure', () async {
     expect(await kino.progress(4242), isNull);
+  });
+
+  test('waiting for a phone is null, and being approved is a new identity', () async {
+    final link = await kino.startLink(deviceName: 'Android TV');
+    // The QR carries a URL; the server only ever knew a path.
+    expect(kino.linkUrl(link).toString(), 'http://kino.local:8080/link?code=GXSNPT');
+
+    // Nobody has said yes, which is not a refusal and not an identity either.
+    expect(await kino.collectLink(link.secret), isNull);
+    expect(await kino.token, isNull);
+
+    accounts.approved = true;
+    final user = await kino.collectLink(link.secret);
+    expect(user?.publicId, 'ff00');
+    // And this device is that person from here on.
+    expect(await kino.token, 'linked-token');
   });
 
   test('paths become URLs, and absolute ones are left alone', () {

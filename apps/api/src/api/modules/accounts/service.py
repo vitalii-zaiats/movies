@@ -12,8 +12,9 @@ progress and the playlists a guest built up stay attached — the account was
 always there, it just had nobody's name on it.
 """
 
+import secrets
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,11 +22,35 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.core.models import utcnow
 from api.core.security import hash_password, new_token, token_digest, verify_password
 from api.errors import Conflict, Forbidden, Invalid, NotFound, Unauthorized
-from api.modules.accounts.models import AuthSession, Role, User
-from api.modules.accounts.repository import SessionRepository, UserRepository
+from api.modules.accounts.models import AuthSession, DeviceLink, Role, User
+from api.modules.accounts.repository import DeviceLinkRepository, SessionRepository, UserRepository
 from api.settings import settings
 
 MIN_PASSWORD = 8
+
+
+# How long a television has to be approved before its code stops meaning
+# anything. Long enough to find a phone and unlock it, short enough that a code
+# left on a screen in a shared flat goes stale on its own.
+LINK_TTL = timedelta(minutes=10)
+
+# No O or 0, no I or 1: this is read off a screen across a room, and sometimes
+# read aloud.
+LINK_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+LINK_LENGTH = 6
+
+
+@dataclass(frozen=True, slots=True)
+class DeviceRequest:
+    """What a television is handed when it asks to be signed in.
+
+    The code goes on the screen and into the QR; the secret stays in the
+    device and is the only thing that can collect the session afterwards.
+    """
+
+    code: str
+    secret: str
+    expires_at: datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -206,6 +231,82 @@ class AccountService:
         return user
 
     # --- internals ----------------------------------------------------------
+
+    # --- signing in a device that has no keyboard ---------------------------
+
+    @property
+    def links(self) -> DeviceLinkRepository:
+        return DeviceLinkRepository(self.session)
+
+    async def start_link(self, *, device_name: str | None = None) -> DeviceRequest:
+        """Begin a pairing. Nobody is authenticated yet — that is the point."""
+        secret = new_token()
+        now = utcnow()
+
+        # Codes are short, so collisions are possible rather than theoretical.
+        for _ in range(5):
+            code = "".join(secrets.choice(LINK_ALPHABET) for _ in range(LINK_LENGTH))
+            if await self.links.by_code(code) is None:
+                break
+        else:  # pragma: no cover — five collisions in a row means something else
+            raise Conflict("could not allocate a code")
+
+        link = await self.links.add(
+            DeviceLink(
+                code=code,
+                secret_digest=token_digest(secret),
+                device_name=(device_name or None),
+                expires_at=now + LINK_TTL,
+            )
+        )
+        await self.session.commit()
+        return DeviceRequest(code=link.code, secret=secret, expires_at=link.expires_at)
+
+    async def link_for(self, code: str) -> DeviceLink:
+        """The pending request behind a code, for the page about to approve it."""
+        link = await self.links.by_code(code)
+        if link is None:
+            raise NotFound("no such code")
+        if link.expired(utcnow()):
+            raise Invalid("that code has expired")
+        return link
+
+    async def approve_link(self, code: str, user: User) -> DeviceLink:
+        """Say yes, as somebody. This is the only step that needs an identity —
+        and it is the phone's, not the television's."""
+        link = await self.link_for(code)
+        if not link.pending and link.user_id != user.id:
+            raise Conflict("that code was already used by somebody else")
+
+        link.user_id = user.id
+        link.approved_at = utcnow()
+        await self.session.commit()
+        return link
+
+    async def collect_link(
+        self, secret: str, *, user_agent: str | None = None
+    ) -> Credential | None:
+        """The television asking whether it may come in yet.
+
+        None means "not yet" — the ordinary answer while somebody walks to their
+        phone. Anything else is final: a session, or a refusal.
+        """
+        link = await self.links.by_secret(token_digest(secret))
+        if link is None:
+            raise NotFound("unknown device")
+        if link.expired(utcnow()):
+            raise Invalid("that request has expired")
+        # A token handed out twice is a token that can be stolen from the wire
+        # and replayed. Once is once.
+        if link.consumed_at is not None:
+            raise Invalid("that request was already collected")
+        if link.pending or link.user is None:
+            return None
+
+        credential = await self._issue(link.user, user_agent=user_agent)
+        link.consumed_at = utcnow()
+        await self.session.commit()
+        return credential
 
     async def _issue(self, user: User, *, user_agent: str | None) -> Credential:
         token = new_token()

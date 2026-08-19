@@ -14,6 +14,7 @@ import 'core/kino.dart';
 import 'core/settings.dart';
 import 'core/theme.dart';
 import 'features/home/home_screen.dart';
+import 'features/welcome/welcome_screen.dart';
 import 'l10n/app_localizations.dart';
 
 /// The chosen theme and language, handed down so the account screen can change
@@ -33,12 +34,16 @@ class KinoApp extends StatelessWidget {
     required this.client,
     required this.settings,
     this.television = false,
+    this.firstLaunch = false,
     super.key,
   });
 
   final KinoClient client;
   final Settings settings;
   final bool television;
+
+  /// Nobody has a session on this device yet, so ask how they'd like one.
+  final bool firstLaunch;
 
   @override
   Widget build(BuildContext context) {
@@ -79,10 +84,33 @@ class KinoApp extends StatelessWidget {
               ),
               child: child!,
             ),
-            home: const HomeScreen(),
+            home: _Entry(welcome: firstLaunch),
           ),
         ),
       ),
     );
   }
+}
+
+/// Which screen the app opens on.
+///
+/// The welcome is not a route: there is nothing to go back to once somebody is
+/// signed in, and leaving it on the stack would mean a remote's Back button
+/// landing on a choice that has already been made. So it is swapped out.
+class _Entry extends StatefulWidget {
+  const _Entry({required this.welcome});
+
+  final bool welcome;
+
+  @override
+  State<_Entry> createState() => _EntryState();
+}
+
+class _EntryState extends State<_Entry> {
+  late bool _welcome = widget.welcome;
+
+  @override
+  Widget build(BuildContext context) => _welcome
+      ? WelcomeScreen(onSettled: () => setState(() => _welcome = false))
+      : const HomeScreen();
 }

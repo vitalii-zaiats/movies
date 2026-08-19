@@ -153,6 +153,82 @@ final $typed_data.Uint8List identityDescriptor = $convert.base64Decode(
     'CghJZGVudGl0eRIUCgV0b2tlbhgBIAEoCVIFdG9rZW4SJgoEdXNlchgCIAEoCzISLmNhdGFsb2'
     'd1ZS52MS5Vc2VyUgR1c2Vy');
 
+@$core.Deprecated('Use startDeviceLinkRequestDescriptor instead')
+const StartDeviceLinkRequest$json = {
+  '1': 'StartDeviceLinkRequest',
+  '2': [
+    {
+      '1': 'device_name',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'deviceName',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_device_name'},
+  ],
+};
+
+/// Descriptor for `StartDeviceLinkRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List startDeviceLinkRequestDescriptor =
+    $convert.base64Decode(
+        'ChZTdGFydERldmljZUxpbmtSZXF1ZXN0EiQKC2RldmljZV9uYW1lGAEgASgJSABSCmRldmljZU'
+        '5hbWWIAQFCDgoMX2RldmljZV9uYW1l');
+
+@$core.Deprecated('Use deviceLinkDescriptor instead')
+const DeviceLink$json = {
+  '1': 'DeviceLink',
+  '2': [
+    {'1': 'code', '3': 1, '4': 1, '5': 9, '10': 'code'},
+    {'1': 'secret', '3': 2, '4': 1, '5': 9, '10': 'secret'},
+    {'1': 'verify_path', '3': 3, '4': 1, '5': 9, '10': 'verifyPath'},
+    {'1': 'expires_in', '3': 4, '4': 1, '5': 13, '10': 'expiresIn'},
+  ],
+};
+
+/// Descriptor for `DeviceLink`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deviceLinkDescriptor = $convert.base64Decode(
+    'CgpEZXZpY2VMaW5rEhIKBGNvZGUYASABKAlSBGNvZGUSFgoGc2VjcmV0GAIgASgJUgZzZWNyZX'
+    'QSHwoLdmVyaWZ5X3BhdGgYAyABKAlSCnZlcmlmeVBhdGgSHQoKZXhwaXJlc19pbhgEIAEoDVIJ'
+    'ZXhwaXJlc0lu');
+
+@$core.Deprecated('Use collectDeviceLinkRequestDescriptor instead')
+const CollectDeviceLinkRequest$json = {
+  '1': 'CollectDeviceLinkRequest',
+  '2': [
+    {'1': 'secret', '3': 1, '4': 1, '5': 9, '10': 'secret'},
+  ],
+};
+
+/// Descriptor for `CollectDeviceLinkRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List collectDeviceLinkRequestDescriptor =
+    $convert.base64Decode(
+        'ChhDb2xsZWN0RGV2aWNlTGlua1JlcXVlc3QSFgoGc2VjcmV0GAEgASgJUgZzZWNyZXQ=');
+
+@$core.Deprecated('Use deviceSessionDescriptor instead')
+const DeviceSession$json = {
+  '1': 'DeviceSession',
+  '2': [
+    {'1': 'linked', '3': 1, '4': 1, '5': 8, '10': 'linked'},
+    {
+      '1': 'identity',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.catalogue.v1.Identity',
+      '10': 'identity'
+    },
+  ],
+};
+
+/// Descriptor for `DeviceSession`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deviceSessionDescriptor = $convert.base64Decode(
+    'Cg1EZXZpY2VTZXNzaW9uEhYKBmxpbmtlZBgBIAEoCFIGbGlua2VkEjIKCGlkZW50aXR5GAIgAS'
+    'gLMhYuY2F0YWxvZ3VlLnYxLklkZW50aXR5UghpZGVudGl0eQ==');
+
 @$core.Deprecated('Use whoAmIRequestDescriptor instead')
 const WhoAmIRequest$json = {
   '1': 'WhoAmIRequest',

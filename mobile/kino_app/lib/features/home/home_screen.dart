@@ -83,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = Palette.of(context);
+    final tv = Kino.isTv(context);
 
     return ListenableBuilder(
       listenable: _model,
@@ -162,18 +163,27 @@ class _HomeScreenState extends State<HomeScreen>
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  // A television cuts its own edges off — overscan is still
+                  // real on panels people own — so the grid keeps clear of
+                  // them. A window doesn't, and 16 is the system's margin.
+                  padding: EdgeInsets.fromLTRB(
+                    tv ? 48 : 16,
+                    tv ? 24 : 0,
+                    tv ? 48 : 16,
+                    tv ? 32 : 0,
+                  ),
                   sliver: SliverGrid.builder(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      // `--grid-card` from the web's tokens: the narrowest a
-                      // tile may get before a poster stops being one.
-                      maxCrossAxisExtent: 200,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      // `--grid-card` from the web's tokens is 200; a
+                      // television sits three metres away and reads bigger
+                      // type, so its cards are wider or the titles clip.
+                      maxCrossAxisExtent: tv ? 180 : 200,
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
                       // Poster plus the caption under it. The tile lets its
                       // body take whatever is left, so a rounding error here
                       // costs a pixel of white rather than a stripe of orange.
-                      childAspectRatio: 0.58,
+                      childAspectRatio: tv ? 0.55 : 0.58,
                     ),
                     itemCount: _model.shows.length,
                     itemBuilder: (context, index) => _ShowTile(
@@ -298,14 +308,32 @@ class _ContinueRail extends StatelessWidget {
   // So the estimate only *reserves* the space; the title is `Flexible` and takes
   // what it needs of it. Too little and it ellipsizes, which is what `maxLines`
   // is for; too much and there is a gap nobody notices.
-  static const _posterWidth = 92.0;
   static const _titleSize = 13.0;
   static const _barHeight = 4.0;
 
+  /// A phone's rail is a strip of thumbnails; a television's is the size of the
+  /// cards beside it and no larger. A television reads at about 960dp however
+  /// many pixels the panel has, so 240 there is a quarter of the screen — twice
+  /// the width of a grid card, which is what made the rail look enormous.
+  static double _poster(BuildContext context) => Kino.isTv(context) ? 160 : 92;
+
+  /// Titles wrap to two lines on a phone and one on a television, where the
+  /// type is scaled up and the band would otherwise eat half the screen.
+  static int _titleLines(BuildContext context) => Kino.isTv(context) ? 1 : 2;
+
+  /// What the focus frame costs vertically: 4 of padding and 4 of border, top
+  /// and bottom. Left out of this sum once already, and the title paid for it —
+  /// it came out sliced through the middle of its letters.
+  static const _frame = 16.0;
+
   double _height(BuildContext context) {
-    final poster = _posterWidth / posterRatio;
-    final title = (MediaQuery.textScalerOf(context).scale(_titleSize) * 1.45 * 2).ceilToDouble();
-    return poster + 8 + title + 6 + _barHeight;
+    final poster = _poster(context) / posterRatio;
+    final lines = _titleLines(context);
+    final title =
+        (MediaQuery.textScalerOf(context).scale(_titleSize) * 1.45 * lines).ceilToDouble();
+    // Two extra pixels of slack: a font's real line height comes from its own
+    // metrics, and being a fraction short here is what paints the stripes.
+    return poster + 8 + title + 6 + _barHeight + _frame + 2;
   }
 
   @override
@@ -322,19 +350,19 @@ class _ContinueRail extends StatelessWidget {
           height: _height(context),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            // Clear of the panel's own edges, like the grid below it.
+            padding: EdgeInsets.symmetric(horizontal: Kino.isTv(context) ? 48 : 16),
             itemCount: entries.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            separatorBuilder: (_, _) => SizedBox(width: Kino.isTv(context) ? 24 : 12),
             itemBuilder: (context, index) {
               final entry = entries[index];
               final show = entry.episode.show;
               final ratio = entry.progress.hasRatio() ? entry.progress.ratio : 0.0;
 
               return SizedBox(
-                width: _posterWidth,
-                child: InkWell(
+                width: _poster(context),
+                child: _Resumable(
                   autofocus: index == 0 && Kino.isTv(context),
-                  focusColor: Theme.of(context).focusColor,
                   onTap: () => Navigator.of(context)
                       .push(
                         MaterialPageRoute<void>(
@@ -352,12 +380,12 @@ class _ContinueRail extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Poster(url: kino.posterUrl(show), seed: show.key, width: _posterWidth),
+                      Poster(url: kino.posterUrl(show), seed: show.key, width: _poster(context)),
                       const SizedBox(height: 8),
                       Flexible(
                         child: Text(
                           show.title,
-                          maxLines: 2,
+                          maxLines: _titleLines(context),
                           overflow: TextOverflow.ellipsis,
                           style: body(_titleSize, weight: 600, color: palette.text),
                         ),
@@ -383,6 +411,46 @@ class _ContinueRail extends StatelessWidget {
 /// empty. It is now the height of the row, and the space beside it carries what
 /// a browse list is actually scanned for: a score, a year, and what kind of
 /// thing this is.
+/// One tile of the rail, with the same focus ring the cards have: on a
+/// television, what is focused *is* what is selected, and a tinted background
+/// doesn't say so from a sofa.
+class _Resumable extends StatefulWidget {
+  const _Resumable({required this.child, required this.onTap, this.autofocus = false});
+
+  final Widget child;
+  final VoidCallback onTap;
+  final bool autofocus;
+
+  @override
+  State<_Resumable> createState() => _ResumableState();
+}
+
+class _ResumableState extends State<_Resumable> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Palette.of(context);
+
+    return InkWell(
+      autofocus: widget.autofocus,
+      onFocusChange: (has) => setState(() => _focused = has),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _focused ? palette.accent : Colors.transparent,
+            width: 4,
+          ),
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 class _ShowRow extends StatelessWidget {
   const _ShowRow({required this.summary, required this.onReturn, this.first = false});
 
@@ -500,9 +568,12 @@ class _GenreTag extends StatelessWidget {
   }
 }
 
-/// The web app's card, as a widget: a poster, then a line under it with the
-/// title and what there is of it. Bordered and square, like everything else.
-class _ShowTile extends StatelessWidget {
+/// The web app's card, as a widget: a poster, then the title under it.
+///
+/// The caption is two rows rather than one. Sharing a line with the count
+/// clipped most titles mid-word — "Розслідуванн" — which on a television is the
+/// only thing being read from across a room.
+class _ShowTile extends StatefulWidget {
   const _ShowTile({required this.summary, required this.onReturn, this.first = false});
 
   final ShowSummary summary;
@@ -510,56 +581,106 @@ class _ShowTile extends StatelessWidget {
   final bool first;
 
   @override
+  State<_ShowTile> createState() => _ShowTileState();
+}
+
+class _ShowTileState extends State<_ShowTile> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final kino = Kino.of(context);
     final palette = Palette.of(context);
     final l10n = AppLocalizations.of(context);
-    final show = summary.show;
+    final show = widget.summary.show;
 
     final note = show.isFilm
-        ? (summary.playableCount > 0 ? l10n.film : l10n.filmNoStream)
-        : l10n.episodeCount(summary.episodeCount);
+        ? (widget.summary.playableCount > 0 ? l10n.film : l10n.filmNoStream)
+        : l10n.episodeCount(widget.summary.episodeCount);
 
     return InkWell(
-      autofocus: first && Kino.isTv(context),
-      focusColor: Theme.of(context).focusColor,
-      // A title page is where watching usually starts, so coming back from one
-      // is the commonest moment for the rail to be stale.
+      autofocus: widget.first && Kino.isTv(context),
+      onFocusChange: (has) => setState(() => _focused = has),
       onTap: () => Navigator.of(context)
           .push(MaterialPageRoute<void>(builder: (_) => ShowScreen(showKey: show.key)))
-          .then((_) => onReturn()),
-      child: DecoratedBox(
-        decoration: BoxDecoration(border: Border.all(color: palette.line, width: 2)),
+          .then((_) => widget.onReturn()),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          // Focus has to be unmistakable at three metres, and a tinted
+          // background is not: the accent takes the whole frame instead.
+          border: Border.all(
+            color: _focused ? palette.accent : palette.line,
+            width: _focused ? 3 : 1,
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AspectRatio(
               aspectRatio: posterRatio,
-              child: Poster(
-                url: kino.posterUrl(show),
-                seed: show.key,
-                // The frame is the grid cell's; the poster fills it.
-                width: double.infinity,
-                bordered: false,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Poster(
+                    url: kino.posterUrl(show),
+                    seed: show.key,
+                    // The frame is the card's; the poster fills it.
+                    width: double.infinity,
+                    bordered: false,
+                  ),
+                  // The score, on the artwork rather than under it: it is the
+                  // thing most people choose by, and the caption below has room
+                  // for one line of title and nothing else.
+                  //
+                  // Top right, on ink: a poster is somebody else's picture in
+                  // colours they chose, and light type laid straight on one is
+                  // unreadable often enough to need a ground of its own.
+                  if (widget.summary.hasImdbRating())
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: ColoredBox(
+                        color: const Color(0xE6201E1D),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          child: Text(
+                            '★ ${widget.summary.imdbRating.toStringAsFixed(1)}',
+                            style: body(11, weight: 700, color: paper),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  // Not `spaceBetween`: with a one-line title that opened a
+                  // hole the height of a line and made every card look empty.
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
+                    Flexible(
                       child: Text(
                         show.title,
-                        maxLines: 2,
+                        // One line on a television. Two lines of 1.25-scaled
+                        // type don't fit a compact card, and a title sliced
+                        // through the middle of its letters is worse than one
+                        // that ends in an ellipsis — the whole name is on the
+                        // page this opens anyway.
+                        maxLines: Kino.isTv(context) ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: body(13, weight: 600, color: palette.text),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(height: 2),
                     Text(
                       note.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: body(10, weight: 700, color: palette.accent),
                     ),
                   ],

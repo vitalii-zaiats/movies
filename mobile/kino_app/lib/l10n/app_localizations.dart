@@ -583,6 +583,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start again'**
   String get startAgain;
+
+  /// No description provided for @welcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get welcome;
+
+  /// No description provided for @welcomeBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to sign up for. The catalogue gives this device an identity of its own, and what you watch is remembered against it from the first title on.'**
+  String get welcomeBlurb;
+
+  /// No description provided for @continueAsGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue as guest'**
+  String get continueAsGuest;
+
+  /// No description provided for @signInOnAnotherDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in from your phone'**
+  String get signInOnAnotherDevice;
+
+  /// No description provided for @signInOnAnotherDeviceBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Typing a password with a remote is miserable. Scan a code instead and approve it where there is a keyboard.'**
+  String get signInOnAnotherDeviceBlurb;
+
+  /// No description provided for @scanThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this with your phone'**
+  String get scanThis;
+
+  /// No description provided for @orOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Or open {url} and type the code'**
+  String orOpen(String url);
+
+  /// No description provided for @codeExpiresIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} left'**
+  String codeExpiresIn(String time);
+
+  /// No description provided for @codeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That code has run out — codes only last ten minutes.'**
+  String get codeExpired;
+
+  /// No description provided for @askForNewCode.
+  ///
+  /// In en, this message translates to:
+  /// **'New code'**
+  String get askForNewCode;
+
+  /// No description provided for @waitingForPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your phone…'**
+  String get waitingForPhone;
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// No description provided for @linkDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a device'**
+  String get linkDevice;
+
+  /// No description provided for @linkedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String linkedAs(String name);
 }
 
 class _AppLocalizationsDelegate

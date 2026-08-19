@@ -7,7 +7,7 @@ only thing this file is for.
 """
 
 from api.core.models import Base
-from api.modules.accounts.models import AuthSession, User
+from api.modules.accounts.models import AuthSession, DeviceLink, User
 from api.modules.activity.models import ActivityEvent, WatchProgress
 from api.modules.catalogue.models import Episode, Show
 from api.modules.curation.models import Artwork, Section
@@ -19,6 +19,7 @@ __all__ = [
     "Artwork",
     "AuthSession",
     "Base",
+    "DeviceLink",
     "Episode",
     "MediaFile",
     "Playlist",

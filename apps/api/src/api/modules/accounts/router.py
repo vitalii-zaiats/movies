@@ -12,6 +12,11 @@ from api.modules.accounts.deps import Accounts, Admin, CurrentUser
 from api.modules.accounts.models import User
 from api.modules.accounts.schemas import (
     ClaimRequest,
+    DeviceApproval,
+    DeviceCollect,
+    DeviceLinkOut,
+    DeviceLinkStatus,
+    DeviceSession,
     Identity,
     LoginRequest,
     RenameRequest,
@@ -20,6 +25,8 @@ from api.modules.accounts.schemas import (
     UserPage,
 )
 from api.modules.accounts.service import Credential
+from api.settings import settings
+from api.core.models import utcnow
 from api.modules.accounts.transport import attach_token, clear_token, read_token
 
 router = APIRouter(tags=["accounts"])
@@ -113,3 +120,71 @@ async def list_users(
 @router.patch("/users/{public_id}/role", response_model=UserOut)
 async def set_role(public_id: str, body: RoleRequest, _: Admin, accounts: Accounts) -> User:
     return await accounts.set_role(public_id, body.role)
+
+
+# --- signing in a device with no keyboard ------------------------------------
+#
+# Typing an email and a password with a remote is miserable, so the television
+# never asks for either. It shows a code, a phone opens that code in a browser
+# and approves it as whoever is signed in there, and the television collects a
+# session of its own.
+#
+# The two halves are deliberately not the same secret. The code is short because
+# it is read off a screen; knowing it only lets somebody *approve*. The secret
+# stays inside the television and is the only thing that can collect the
+# session — so even a code approved by the wrong person hands the token to the
+# device that asked for it, and to nothing else.
+
+
+@router.post("/auth/device", response_model=DeviceLinkOut, status_code=201)
+async def start_device_link(request: Request, accounts: Accounts) -> DeviceLinkOut:
+    """Begin a pairing. Deliberately open: nobody is signed in yet."""
+    link = await accounts.start_link(device_name=request.headers.get("user-agent"))
+    return DeviceLinkOut(
+        code=link.code,
+        secret=link.secret,
+        verify_path=f"{settings.link_base.rstrip('/')}?code={link.code}",
+        expires_in=int((link.expires_at - utcnow()).total_seconds()),
+    )
+
+
+@router.get("/auth/device/{code}", response_model=DeviceLinkStatus)
+async def device_link_status(code: str, accounts: Accounts) -> DeviceLinkStatus:
+    """What is being asked for, for the page that is about to say yes."""
+    link = await accounts.link_for(code)
+    return DeviceLinkStatus(
+        code=link.code,
+        device_name=link.device_name,
+        approved=not link.pending,
+        expires_in=int((link.expires_at - utcnow()).total_seconds()),
+    )
+
+
+@router.post("/auth/device/approve", response_model=DeviceLinkStatus)
+async def approve_device_link(
+    body: DeviceApproval, user: CurrentUser, accounts: Accounts
+) -> DeviceLinkStatus:
+    """Say yes, as somebody. The only step in this dance that needs an identity,
+    and it is the phone's."""
+    link = await accounts.approve_link(body.code, user)
+    return DeviceLinkStatus(
+        code=link.code,
+        device_name=link.device_name,
+        approved=True,
+        expires_in=int((link.expires_at - utcnow()).total_seconds()),
+    )
+
+
+@router.post("/auth/device/collect", response_model=DeviceSession)
+async def collect_device_link(
+    body: DeviceCollect, request: Request, response: Response, accounts: Accounts
+) -> DeviceSession:
+    """The television asking whether it may come in yet."""
+    credential = await accounts.collect_link(
+        body.secret, user_agent=request.headers.get("user-agent")
+    )
+    if credential is None:
+        return DeviceSession(status="pending")
+
+    attach_token(response, credential.token)
+    return DeviceSession(status="linked", identity=_identity(credential))

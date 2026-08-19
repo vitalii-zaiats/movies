@@ -37,6 +37,7 @@ or an `Image` can open, against `mediaBase`.
 | what                    | calls                                                       |
 |-------------------------|--------------------------------------------------------------|
 | identity                | `whoAmI`, `startGuest`, `claim`, `login`, `logout`, `rename` |
+| pairing                 | `startLink`, `collectLink`, `linkUrl`                        |
 | browsing                | `shows`, `allShows`, `show`, `episodes`, `episode`, `home`   |
 | watching                | `report`, `progress`, `forget`, `history`, `continueWatching`|
 | playlists               | `lists`, `list`, `createList`, `listFromShow`, `updateList`, `deleteList`, `addToList`, `removeFromList`, `reorderList` |
@@ -44,6 +45,11 @@ or an `Image` can open, against `mediaBase`.
 `allShows` is a server stream — the whole catalogue as it arrives, for a client
 that wants to search offline rather than page through eight thousand titles
 fifty at a time.
+
+`collectLink` answers `null` the same way, and for the same reason: "nobody has
+approved this yet" is the ordinary answer while somebody walks to their phone,
+not a refusal. The refusals — expired, already collected, never existed — do
+throw, because each one means stop asking.
 
 `progress` answers `null` rather than throwing when an episode has never been
 watched: the server says `NOT_FOUND`, and "start at the beginning" is an answer.

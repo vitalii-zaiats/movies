@@ -64,6 +64,16 @@ class AccountsStub:
                 request_serializer=contracts_dot_catalogue__pb2.RenameRequest.SerializeToString,
                 response_deserializer=contracts_dot_catalogue__pb2.User.FromString,
                 _registered_method=True)
+        self.StartDeviceLink = channel.unary_unary(
+                '/catalogue.v1.Accounts/StartDeviceLink',
+                request_serializer=contracts_dot_catalogue__pb2.StartDeviceLinkRequest.SerializeToString,
+                response_deserializer=contracts_dot_catalogue__pb2.DeviceLink.FromString,
+                _registered_method=True)
+        self.CollectDeviceLink = channel.unary_unary(
+                '/catalogue.v1.Accounts/CollectDeviceLink',
+                request_serializer=contracts_dot_catalogue__pb2.CollectDeviceLinkRequest.SerializeToString,
+                response_deserializer=contracts_dot_catalogue__pb2.DeviceSession.FromString,
+                _registered_method=True)
 
 
 class AccountsServicer:
@@ -110,6 +120,26 @@ class AccountsServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StartDeviceLink(self, request, context):
+        """Signing in a device that has no keyboard.
+
+        A television asks for a code, shows it (as a QR, usually), and waits. A
+        phone opens that code in a browser and approves it as whoever is signed in
+        there. Then the television collects a session of its own.
+
+        Approval is deliberately not here: it happens in a browser, where somebody
+        is already signed in and can see what they are agreeing to.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CollectDeviceLink(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AccountsServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -142,6 +172,16 @@ def add_AccountsServicer_to_server(servicer, server):
                     servicer.Rename,
                     request_deserializer=contracts_dot_catalogue__pb2.RenameRequest.FromString,
                     response_serializer=contracts_dot_catalogue__pb2.User.SerializeToString,
+            ),
+            'StartDeviceLink': grpc.unary_unary_rpc_method_handler(
+                    servicer.StartDeviceLink,
+                    request_deserializer=contracts_dot_catalogue__pb2.StartDeviceLinkRequest.FromString,
+                    response_serializer=contracts_dot_catalogue__pb2.DeviceLink.SerializeToString,
+            ),
+            'CollectDeviceLink': grpc.unary_unary_rpc_method_handler(
+                    servicer.CollectDeviceLink,
+                    request_deserializer=contracts_dot_catalogue__pb2.CollectDeviceLinkRequest.FromString,
+                    response_serializer=contracts_dot_catalogue__pb2.DeviceSession.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -306,6 +346,60 @@ class Accounts:
             '/catalogue.v1.Accounts/Rename',
             contracts_dot_catalogue__pb2.RenameRequest.SerializeToString,
             contracts_dot_catalogue__pb2.User.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StartDeviceLink(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/catalogue.v1.Accounts/StartDeviceLink',
+            contracts_dot_catalogue__pb2.StartDeviceLinkRequest.SerializeToString,
+            contracts_dot_catalogue__pb2.DeviceLink.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CollectDeviceLink(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/catalogue.v1.Accounts/CollectDeviceLink',
+            contracts_dot_catalogue__pb2.CollectDeviceLinkRequest.SerializeToString,
+            contracts_dot_catalogue__pb2.DeviceSession.FromString,
             options,
             channel_credentials,
             insecure,

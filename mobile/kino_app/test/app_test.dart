@@ -37,6 +37,13 @@ class _Accounts extends AccountsServiceBase {
   @override
   Future<User> rename(ServiceCall call, RenameRequest request) async =>
       throw UnimplementedError();
+  @override
+  Future<DeviceLink> startDeviceLink(ServiceCall call, StartDeviceLinkRequest request) async =>
+      throw UnimplementedError();
+  @override
+  Future<DeviceSession> collectDeviceLink(
+          ServiceCall call, CollectDeviceLinkRequest request) async =>
+      throw UnimplementedError();
 }
 
 class _Watching extends WatchingServiceBase {

@@ -214,5 +214,40 @@
       }
     }
   },
-  "startAgain": "Start again"
+  "startAgain": "Start again",
+  "welcome": "Welcome",
+  "welcomeBlurb": "Nothing to sign up for. The catalogue gives this device an identity of its own, and what you watch is remembered against it from the first title on.",
+  "continueAsGuest": "Continue as guest",
+  "signInOnAnotherDevice": "Sign in from your phone",
+  "signInOnAnotherDeviceBlurb": "Typing a password with a remote is miserable. Scan a code instead and approve it where there is a keyboard.",
+  "scanThis": "Scan this with your phone",
+  "orOpen": "Or open {url} and type the code",
+  "@orOpen": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "codeExpiresIn": "{time} left",
+  "@codeExpiresIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codeExpired": "That code has run out — codes only last ten minutes.",
+  "askForNewCode": "New code",
+  "waitingForPhone": "Waiting for your phone…",
+  "notNow": "Not now",
+  "linkDevice": "Link a device",
+  "linkedAs": "Signed in as {name}",
+  "@linkedAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

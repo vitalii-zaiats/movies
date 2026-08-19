@@ -90,6 +90,38 @@ class Identity(_message.Message):
     user: User
     def __init__(self, token: _Optional[str] = ..., user: _Optional[_Union[User, _Mapping]] = ...) -> None: ...
 
+class StartDeviceLinkRequest(_message.Message):
+    __slots__ = ("device_name",)
+    DEVICE_NAME_FIELD_NUMBER: _ClassVar[int]
+    device_name: str
+    def __init__(self, device_name: _Optional[str] = ...) -> None: ...
+
+class DeviceLink(_message.Message):
+    __slots__ = ("code", "secret", "verify_path", "expires_in")
+    CODE_FIELD_NUMBER: _ClassVar[int]
+    SECRET_FIELD_NUMBER: _ClassVar[int]
+    VERIFY_PATH_FIELD_NUMBER: _ClassVar[int]
+    EXPIRES_IN_FIELD_NUMBER: _ClassVar[int]
+    code: str
+    secret: str
+    verify_path: str
+    expires_in: int
+    def __init__(self, code: _Optional[str] = ..., secret: _Optional[str] = ..., verify_path: _Optional[str] = ..., expires_in: _Optional[int] = ...) -> None: ...
+
+class CollectDeviceLinkRequest(_message.Message):
+    __slots__ = ("secret",)
+    SECRET_FIELD_NUMBER: _ClassVar[int]
+    secret: str
+    def __init__(self, secret: _Optional[str] = ...) -> None: ...
+
+class DeviceSession(_message.Message):
+    __slots__ = ("linked", "identity")
+    LINKED_FIELD_NUMBER: _ClassVar[int]
+    IDENTITY_FIELD_NUMBER: _ClassVar[int]
+    linked: bool
+    identity: Identity
+    def __init__(self, linked: _Optional[bool] = ..., identity: _Optional[_Union[Identity, _Mapping]] = ...) -> None: ...
+
 class WhoAmIRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...

@@ -20,7 +20,18 @@ Two addresses because there are two: gRPC has a port of its own, and the server
 hands out paths (`/vod/7455/index.m3u8`) rather than URLs, since it has no idea
 what address the phone reached it on.
 
-## Four screens
+## Five screens
+
+**Welcome** is shown once, on a device with no session yet, and exists because
+of the television. Two ways in: be a guest — one call, no decisions — or sign in
+from a phone. The second draws a QR of `/link?code=…` and a code big enough to
+read from a sofa, then polls every two seconds until somebody, elsewhere,
+approves it. The same flow is reachable later from the account screen, which is
+where a guest who skipped it ends up.
+
+The QR is only as scannable as `KINO_HTTP` is reachable: the server hands out a
+path, because it has no idea what address this device reached it on, and a
+loopback that only the emulator's host understands makes a QR nobody can use.
 
 **Home** becomes somebody first — `whoAmI` mints a guest server-side and the
 token is kept on the device, so "continue watching" has something to be about
@@ -80,8 +91,13 @@ whatever is focused has to *look* focused.
 
 Verified on a phone emulator and an iPhone simulator: guest minted, catalogue
 browsed and paged, a film played, and it reappearing under "continue watching"
-afterwards. **Not** verified on a television — the TV emulator wouldn't start
-here, so none of the leanback path has been seen running.
+afterwards.
+
+Verified on the 1080p television emulator too — `dumpsys uimode` reporting
+`mCurUiMode=0x24`, so this is the leanback path and not a large phone. The whole
+pairing was driven from a remote: focus down, Select, a code on screen, a
+browser elsewhere approving it, and the catalogue opening as the account that
+approved — still that account after a restart.
 
 ```bash
 flutter test        # boots the app against a gRPC server in the same process

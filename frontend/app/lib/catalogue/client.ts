@@ -9,6 +9,7 @@ import type {
   Health,
   HistoryEntry,
   HistoryPage,
+  DeviceLinkStatus,
   Identity,
   Playlist,
   PlaylistDetail,
@@ -42,6 +43,13 @@ export interface CatalogueClient {
   register(email: string, password: string, displayName?: string): Promise<Identity>
   signIn(email: string, password: string): Promise<Identity>
   signOut(): Promise<void>
+
+  // --- signing in a television ---------------------------------------------
+  // A device with no keyboard shows a code; this browser, where somebody is
+  // already signed in, is the thing that says yes to it.
+
+  deviceLink(code: string): Promise<DeviceLinkStatus>
+  approveDevice(code: string): Promise<DeviceLinkStatus>
 
   /** Where to resume. Null when this episode was never started. */
   progress(episodeId: number): Promise<Progress | null>

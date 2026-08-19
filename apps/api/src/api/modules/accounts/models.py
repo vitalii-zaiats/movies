@@ -92,3 +92,62 @@ class AuthSession(Base, TimestampMixin):
 
     def is_live(self, now: datetime | None = None) -> bool:
         return self.expires_at > (now or utcnow())
+
+
+class DeviceLink(Base, TimestampMixin):
+    """A television asking a phone to sign it in.
+
+    Typing an email and a password with a remote is miserable, so the set is
+    made elsewhere: the TV shows a code, a phone opens it in a browser, whoever
+    is already signed in there approves it, and the TV collects a session.
+
+    Two secrets, on purpose, and they are not the same one:
+
+    `code` is short because it is read off a screen and carried in a QR. It is
+    therefore guessable in bulk, which is why knowing it is not enough to *get*
+    anything — it only lets a phone approve.
+
+    `secret` never leaves the television. Only the holder of it can collect the
+    session, so an approval a stranger tricked somebody into giving still hands
+    the token to the TV that asked, and to nothing else.
+    """
+
+    __tablename__ = "device_links"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # Short, unambiguous, and read aloud sometimes: no O/0 or I/1 in the
+    # alphabet that makes it.
+    code: Mapped[str] = mapped_column(String(12), unique=True, index=True)
+    # Hashed like any other credential: a leaked database should not hand
+    # somebody a live television session.
+    secret_digest: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+
+    # What to tell the person before they approve. "Android TV", "macOS" — not
+    # proof of anything, but it is the difference between approving your own
+    # living room and approving somebody else's.
+    device_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    # Handed over once. A second collection with the same secret gets nothing.
+    consumed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    # Joined, like `AuthSession.user`: this is read the moment the row is
+    # found, and a lazy load there is a `MissingGreenlet` in an async request —
+    # which is precisely how this first failed.
+    user: Mapped["User | None"] = relationship(lazy="joined")
+
+    @property
+    def pending(self) -> bool:
+        return self.approved_at is None
+
+    def expired(self, now: datetime) -> bool:
+        return now >= self.expires_at

@@ -19,6 +19,7 @@ import '../../l10n/app_localizations.dart';
 import '../../widgets/glyph.dart';
 import '../../widgets/section_head.dart';
 import '../../widgets/states.dart';
+import '../welcome/welcome_screen.dart';
 import 'account_view_model.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -100,12 +101,22 @@ class _Body extends StatelessWidget {
         _RenameForm(model: model, user: user),
 
         // A guest is one device away from losing everything they have watched;
-        // this is the fix, and it keeps the row rather than starting a new one.
+        // these are the fixes, and both keep the row rather than starting a new
+        // one. Which comes first depends on what is being held: a remote makes
+        // the forms below miserable and the phone one obvious.
         if (user.isGuest) ...[
+          if (Kino.isTv(context)) ...[
+            SectionHead(l10n.linkDevice),
+            _LinkTile(model: model),
+          ],
           SectionHead(l10n.createAnAccount),
           _ClaimForm(model: model),
           SectionHead(l10n.alreadyHaveOne),
           _LoginForm(model: model),
+          if (!Kino.isTv(context)) ...[
+            SectionHead(l10n.linkDevice),
+            _LinkTile(model: model),
+          ],
         ],
 
         SectionHead(l10n.appearance),
@@ -463,6 +474,38 @@ class _LanguageChoice extends StatelessWidget {
           chosen.first.isEmpty ? null : Locale(chosen.first),
         ),
       ),
+    );
+  }
+}
+
+/// Sign in without typing: a code here, approved in a browser there.
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({required this.model});
+
+  final AccountViewModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return ListTile(
+      leading: const Glyph(Glyphs.share),
+      title: Text(l10n.signInOnAnotherDevice),
+      subtitle: Text(l10n.signInOnAnotherDeviceBlurb, style: body(12, color: palette.muted)),
+      onTap: () async {
+        final linked = await Navigator.of(context).push<User>(
+          MaterialPageRoute(builder: (_) => const LinkScreen()),
+        );
+        // Somebody said yes: this device is a different person now, and this
+        // screen is still describing the old one.
+        if (linked == null || !context.mounted) return;
+        await model.load();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(l10n.linkedAs(linked.displayName))));
+        }
+      },
     );
   }
 }

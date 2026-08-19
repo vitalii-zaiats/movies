@@ -93,11 +93,35 @@ one episode is a series, exactly one is a film. `order=` is `key` (default),
 | `POST /auth/claim`             | `{email, password, display_name?}` — keeps the row|
 | `POST /auth/login`             | `{email, password}` → a second session            |
 | `POST /auth/logout`            | revokes this session                              |
+| `POST /auth/device`            | a device with no keyboard asks to be signed in    |
+| `GET /auth/device/{code}`      | what is being asked for, for the page saying yes  |
+| `POST /auth/device/approve`    | `{code}` — the browser says yes, as itself        |
+| `POST /auth/device/collect`    | `{secret}` — the device asking picks up a session |
 | `GET /users`                   | admin: everyone, `?guests=`                       |
 | `PATCH /users/{public_id}/role`| admin: `{role}`                                   |
 
 `POST /auth/guest` is deliberately unconditional — that's what makes it usable
 as "watch as someone else on the shared TV".
+
+#### Signing in a television
+
+Typing an email with a D-pad is the reason people give up, so the television
+never asks for one. It calls `POST /auth/device`, shows what comes back as a QR
+and a six-character code, and polls `collect`. A phone opens `/link?code=…`,
+where somebody is already signed in, and approves it.
+
+The two halves are deliberately *not* the same string:
+
+* the **code** is short because it is read off a screen, and knowing it only
+  lets you approve;
+* the **secret** never leaves the device that asked, and is the only thing that
+  can collect the session.
+
+So a code approved by the wrong person hands the session to the device that
+asked for it and to nobody else. Requests live ten minutes, collect once, and
+`collect` answers `{"status": "pending"}` until somebody agrees — a status
+rather than a 404, because a device polling every two seconds should not have
+to read errors to learn it is still waiting.
 
 ### Me: progress, history, activity
 
@@ -395,6 +419,11 @@ x-session-token: <token>          outbound, when this call created the session
 A call that needs somebody and was given nobody mints a guest — the same rule
 `CurrentUser` follows — and the new token rides back in the initial metadata, so
 a client never has to know which RPC created it.
+
+The same pairing is on this port as `Accounts.StartDeviceLink` and
+`Accounts.CollectDeviceLink` — the television speaks gRPC like everything else.
+Approval is not here: it happens in a browser, where somebody is already signed
+in and can read what they are agreeing to.
 
 Refusals become status codes in one place, `rpc/errors.py`, exactly as
 `main.py` does it for HTTP:

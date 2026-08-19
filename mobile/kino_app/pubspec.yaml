@@ -22,6 +22,9 @@ dependencies:
   shared_preferences: ^2.5.0
   cupertino_icons: ^1.0.8
   share_plus: ^13.3.0
+  # A television can't ask for an email, so it draws a code instead and a phone
+  # scans it. Rendering a QR is the one part of that this app can't do itself.
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

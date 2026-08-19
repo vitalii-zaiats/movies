@@ -308,4 +308,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get startAgain => 'Start again';
+
+  @override
+  String get welcome => 'Welcome';
+
+  @override
+  String get welcomeBlurb =>
+      'Nothing to sign up for. The catalogue gives this device an identity of its own, and what you watch is remembered against it from the first title on.';
+
+  @override
+  String get continueAsGuest => 'Continue as guest';
+
+  @override
+  String get signInOnAnotherDevice => 'Sign in from your phone';
+
+  @override
+  String get signInOnAnotherDeviceBlurb =>
+      'Typing a password with a remote is miserable. Scan a code instead and approve it where there is a keyboard.';
+
+  @override
+  String get scanThis => 'Scan this with your phone';
+
+  @override
+  String orOpen(String url) {
+    return 'Or open $url and type the code';
+  }
+
+  @override
+  String codeExpiresIn(String time) {
+    return '$time left';
+  }
+
+  @override
+  String get codeExpired =>
+      'That code has run out — codes only last ten minutes.';
+
+  @override
+  String get askForNewCode => 'New code';
+
+  @override
+  String get waitingForPhone => 'Waiting for your phone…';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get linkDevice => 'Link a device';
+
+  @override
+  String linkedAs(String name) {
+    return 'Signed in as $name';
+  }
 }

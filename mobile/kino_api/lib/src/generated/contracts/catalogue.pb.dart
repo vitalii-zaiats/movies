@@ -216,6 +216,281 @@ class Identity extends $pb.GeneratedMessage {
   User ensureUser() => $_ensure(1);
 }
 
+class StartDeviceLinkRequest extends $pb.GeneratedMessage {
+  factory StartDeviceLinkRequest({
+    $core.String? deviceName,
+  }) {
+    final result = create();
+    if (deviceName != null) result.deviceName = deviceName;
+    return result;
+  }
+
+  StartDeviceLinkRequest._();
+
+  factory StartDeviceLinkRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory StartDeviceLinkRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'StartDeviceLinkRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'catalogue.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'deviceName')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  StartDeviceLinkRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  StartDeviceLinkRequest copyWith(
+          void Function(StartDeviceLinkRequest) updates) =>
+      super.copyWith((message) => updates(message as StartDeviceLinkRequest))
+          as StartDeviceLinkRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static StartDeviceLinkRequest create() => StartDeviceLinkRequest._();
+  @$core.override
+  StartDeviceLinkRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static StartDeviceLinkRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<StartDeviceLinkRequest>(create);
+  static StartDeviceLinkRequest? _defaultInstance;
+
+  /// What to show the person approving: "Android TV", "kino on macOS".
+  @$pb.TagNumber(1)
+  $core.String get deviceName => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set deviceName($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasDeviceName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDeviceName() => $_clearField(1);
+}
+
+class DeviceLink extends $pb.GeneratedMessage {
+  factory DeviceLink({
+    $core.String? code,
+    $core.String? secret,
+    $core.String? verifyPath,
+    $core.int? expiresIn,
+  }) {
+    final result = create();
+    if (code != null) result.code = code;
+    if (secret != null) result.secret = secret;
+    if (verifyPath != null) result.verifyPath = verifyPath;
+    if (expiresIn != null) result.expiresIn = expiresIn;
+    return result;
+  }
+
+  DeviceLink._();
+
+  factory DeviceLink.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeviceLink.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeviceLink',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'catalogue.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'code')
+    ..aOS(2, _omitFieldNames ? '' : 'secret')
+    ..aOS(3, _omitFieldNames ? '' : 'verifyPath')
+    ..aI(4, _omitFieldNames ? '' : 'expiresIn', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeviceLink clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeviceLink copyWith(void Function(DeviceLink) updates) =>
+      super.copyWith((message) => updates(message as DeviceLink)) as DeviceLink;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeviceLink create() => DeviceLink._();
+  @$core.override
+  DeviceLink createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeviceLink getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeviceLink>(create);
+  static DeviceLink? _defaultInstance;
+
+  /// Short, unambiguous, and meant to be read off a screen.
+  @$pb.TagNumber(1)
+  $core.String get code => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set code($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCode() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCode() => $_clearField(1);
+
+  /// Never leaves this device: the only thing that can collect the session.
+  @$pb.TagNumber(2)
+  $core.String get secret => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set secret($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSecret() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSecret() => $_clearField(2);
+
+  /// Where the phone should go, as a path — the server has no idea what address
+  /// this install was reached on, and the client drawing the QR does.
+  @$pb.TagNumber(3)
+  $core.String get verifyPath => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set verifyPath($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasVerifyPath() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearVerifyPath() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get expiresIn => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set expiresIn($core.int value) => $_setUnsignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasExpiresIn() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearExpiresIn() => $_clearField(4);
+}
+
+class CollectDeviceLinkRequest extends $pb.GeneratedMessage {
+  factory CollectDeviceLinkRequest({
+    $core.String? secret,
+  }) {
+    final result = create();
+    if (secret != null) result.secret = secret;
+    return result;
+  }
+
+  CollectDeviceLinkRequest._();
+
+  factory CollectDeviceLinkRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CollectDeviceLinkRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CollectDeviceLinkRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'catalogue.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'secret')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CollectDeviceLinkRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CollectDeviceLinkRequest copyWith(
+          void Function(CollectDeviceLinkRequest) updates) =>
+      super.copyWith((message) => updates(message as CollectDeviceLinkRequest))
+          as CollectDeviceLinkRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CollectDeviceLinkRequest create() => CollectDeviceLinkRequest._();
+  @$core.override
+  CollectDeviceLinkRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CollectDeviceLinkRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CollectDeviceLinkRequest>(create);
+  static CollectDeviceLinkRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get secret => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set secret($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSecret() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSecret() => $_clearField(1);
+}
+
+class DeviceSession extends $pb.GeneratedMessage {
+  factory DeviceSession({
+    $core.bool? linked,
+    Identity? identity,
+  }) {
+    final result = create();
+    if (linked != null) result.linked = linked;
+    if (identity != null) result.identity = identity;
+    return result;
+  }
+
+  DeviceSession._();
+
+  factory DeviceSession.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeviceSession.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeviceSession',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'catalogue.v1'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'linked')
+    ..aOM<Identity>(2, _omitFieldNames ? '' : 'identity',
+        subBuilder: Identity.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeviceSession clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeviceSession copyWith(void Function(DeviceSession) updates) =>
+      super.copyWith((message) => updates(message as DeviceSession))
+          as DeviceSession;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeviceSession create() => DeviceSession._();
+  @$core.override
+  DeviceSession createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeviceSession getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeviceSession>(create);
+  static DeviceSession? _defaultInstance;
+
+  /// False means "not yet", which is the ordinary answer while somebody walks
+  /// to their phone — not an error, and not worth a status code.
+  @$pb.TagNumber(1)
+  $core.bool get linked => $_getBF(0);
+  @$pb.TagNumber(1)
+  set linked($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasLinked() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearLinked() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  Identity get identity => $_getN(1);
+  @$pb.TagNumber(2)
+  set identity(Identity value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasIdentity() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearIdentity() => $_clearField(2);
+  @$pb.TagNumber(2)
+  Identity ensureIdentity() => $_ensure(1);
+}
+
 class WhoAmIRequest extends $pb.GeneratedMessage {
   factory WhoAmIRequest() => create();
 
