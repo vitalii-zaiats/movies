@@ -131,14 +131,24 @@ class SyncReport(BaseModel):
 
 
 class ShowSummary(ShowOut):
-    """A show as a browse list wants it: with how much of it is actually here.
+    """A show as a browse list wants it: with how much of it is actually here,
+    and the few facts a row can use.
 
     The counts are the server's job — the alternative is a page request per tile
     to learn a number, which is what the front end had to do before this existed.
+    The same argument brought the year, the score and the genres along: they are
+    what a row says under a title, and asking for them one row at a time is the
+    request-per-tile problem wearing a different hat.
+
+    What stays out is the synopsis and the cast. Those are a page of prose per
+    row, which is why `ShowDetails` exists.
     """
 
     episode_count: int
     playable_count: int
+    year: int | None = None
+    imdb_rating: float | None = None
+    genres: list[str] | None = None
 
 
 class TrackOut(ORMModel):

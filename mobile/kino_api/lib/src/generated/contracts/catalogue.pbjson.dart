@@ -278,6 +278,21 @@ const ShowSummary$json = {
     },
     {'1': 'episode_count', '3': 2, '4': 1, '5': 13, '10': 'episodeCount'},
     {'1': 'playable_count', '3': 3, '4': 1, '5': 13, '10': 'playableCount'},
+    {'1': 'year', '3': 4, '4': 1, '5': 13, '9': 0, '10': 'year', '17': true},
+    {
+      '1': 'imdb_rating',
+      '3': 5,
+      '4': 1,
+      '5': 1,
+      '9': 1,
+      '10': 'imdbRating',
+      '17': true
+    },
+    {'1': 'genres', '3': 6, '4': 3, '5': 9, '10': 'genres'},
+  ],
+  '8': [
+    {'1': '_year'},
+    {'1': '_imdb_rating'},
   ],
 };
 
@@ -285,7 +300,9 @@ const ShowSummary$json = {
 final $typed_data.Uint8List showSummaryDescriptor = $convert.base64Decode(
     'CgtTaG93U3VtbWFyeRImCgRzaG93GAEgASgLMhIuY2F0YWxvZ3VlLnYxLlNob3dSBHNob3cSIw'
     'oNZXBpc29kZV9jb3VudBgCIAEoDVIMZXBpc29kZUNvdW50EiUKDnBsYXlhYmxlX2NvdW50GAMg'
-    'ASgNUg1wbGF5YWJsZUNvdW50');
+    'ASgNUg1wbGF5YWJsZUNvdW50EhcKBHllYXIYBCABKA1IAFIEeWVhcogBARIkCgtpbWRiX3JhdG'
+    'luZxgFIAEoAUgBUgppbWRiUmF0aW5niAEBEhYKBmdlbnJlcxgGIAMoCVIGZ2VucmVzQgcKBV95'
+    'ZWFyQg4KDF9pbWRiX3JhdGluZw==');
 
 @$core.Deprecated('Use showDetailsDescriptor instead')
 const ShowDetails$json = {

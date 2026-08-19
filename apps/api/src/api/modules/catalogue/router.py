@@ -52,6 +52,9 @@ async def list_shows(
                 **ShowOut.model_validate(show).model_dump(),
                 episode_count=episodes,
                 playable_count=playable,
+                year=show.year,
+                imdb_rating=show.imdb_rating,
+                genres=show.genres,
             )
             for show, episodes, playable in rows
         ],

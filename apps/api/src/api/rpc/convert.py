@@ -128,11 +128,14 @@ def show(dto: ShowOut) -> pb.Show:
 
 
 def show_summary(dto: ShowSummary) -> pb.ShowSummary:
-    return pb.ShowSummary(
+    message = pb.ShowSummary(
         show=show(dto),
         episode_count=dto.episode_count,
         playable_count=dto.playable_count,
     )
+    _set(message, year=dto.year, imdb_rating=dto.imdb_rating)
+    message.genres.extend(dto.genres or [])
+    return message
 
 
 def show_details(dto: ShowDetails) -> pb.ShowDetails:

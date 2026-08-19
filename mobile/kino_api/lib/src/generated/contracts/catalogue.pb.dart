@@ -685,17 +685,29 @@ class Show extends $pb.GeneratedMessage {
   void clearIsFilm() => $_clearField(6);
 }
 
-/// A show in a browse list: how much of it is here, counted by the server.
+/// A show in a browse list: how much of it is here, counted by the server, and
+/// the few facts a row can actually use.
+///
+/// Deliberately not `ShowDetails`. A synopsis in every row of every listing is a
+/// page of prose nobody asked for — but a year, a score and a couple of genres
+/// are what a browse row is *for*, and fetching them per row would be a request
+/// per tile.
 class ShowSummary extends $pb.GeneratedMessage {
   factory ShowSummary({
     Show? show,
     $core.int? episodeCount,
     $core.int? playableCount,
+    $core.int? year,
+    $core.double? imdbRating,
+    $core.Iterable<$core.String>? genres,
   }) {
     final result = create();
     if (show != null) result.show = show;
     if (episodeCount != null) result.episodeCount = episodeCount;
     if (playableCount != null) result.playableCount = playableCount;
+    if (year != null) result.year = year;
+    if (imdbRating != null) result.imdbRating = imdbRating;
+    if (genres != null) result.genres.addAll(genres);
     return result;
   }
 
@@ -717,6 +729,9 @@ class ShowSummary extends $pb.GeneratedMessage {
         fieldType: $pb.PbFieldType.OU3)
     ..aI(3, _omitFieldNames ? '' : 'playableCount',
         fieldType: $pb.PbFieldType.OU3)
+    ..aI(4, _omitFieldNames ? '' : 'year', fieldType: $pb.PbFieldType.OU3)
+    ..aD(5, _omitFieldNames ? '' : 'imdbRating')
+    ..pPS(6, _omitFieldNames ? '' : 'genres')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -766,6 +781,27 @@ class ShowSummary extends $pb.GeneratedMessage {
   $core.bool hasPlayableCount() => $_has(2);
   @$pb.TagNumber(3)
   void clearPlayableCount() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get year => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set year($core.int value) => $_setUnsignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasYear() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearYear() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.double get imdbRating => $_getN(4);
+  @$pb.TagNumber(5)
+  set imdbRating($core.double value) => $_setDouble(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasImdbRating() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearImdbRating() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $pb.PbList<$core.String> get genres => $_getList(5);
 }
 
 /// Everything the crawl knew. Kept off `Show` on purpose: that one rides along

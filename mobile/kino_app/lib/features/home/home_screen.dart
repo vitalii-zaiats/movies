@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:kino_api/kino_api.dart';
 
+import '../../core/genres.dart';
 import '../../core/kino.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -277,32 +278,123 @@ class _ContinueRail extends StatelessWidget {
   }
 }
 
+/// One row of the catalogue, as tall as its poster.
+///
+/// The poster used to be a 56-pixel stamp beside two lines of text, which
+/// wasted the one thing these sources reliably give us and left half the row
+/// empty. It is now the height of the row, and the space beside it carries what
+/// a browse list is actually scanned for: a score, a year, and what kind of
+/// thing this is.
 class _ShowRow extends StatelessWidget {
   const _ShowRow({required this.summary, this.first = false});
 
   final ShowSummary summary;
   final bool first;
 
+  /// Wide enough to read a title off, short enough that six rows still fit on a
+  /// phone screen.
+  static const _poster = 78.0;
+
+  /// Three is what fits on one line at this width; a fourth wraps and turns a
+  /// row into a paragraph.
+  static const _mostGenres = 3;
+
   @override
   Widget build(BuildContext context) {
     final kino = Kino.of(context);
     final palette = Palette.of(context);
     final l10n = AppLocalizations.of(context);
+    final language = Localizations.localeOf(context).languageCode;
     final show = summary.show;
 
-    final note = show.isFilm
-        ? (summary.playableCount > 0 ? l10n.film : l10n.filmNoStream)
-        : l10n.episodesAndPlayable(summary.episodeCount, summary.playableCount);
+    final facts = <String>[
+      if (summary.hasImdbRating()) '★ ${summary.imdbRating.toStringAsFixed(1)}',
+      if (summary.hasYear()) '${summary.year}',
+      if (show.isFilm)
+        (summary.playableCount > 0 ? l10n.film : l10n.filmNoStream)
+      else
+        l10n.episodesAndPlayable(summary.episodeCount, summary.playableCount),
+    ];
 
-    return ListTile(
+    return InkWell(
       autofocus: first && Kino.isTv(context),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      leading: Poster(url: kino.posterUrl(show), seed: show.key, width: 56),
-      title: Text(show.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: Text(note.toUpperCase(), style: body(11, weight: 600, color: palette.muted)),
+      focusColor: Theme.of(context).focusColor,
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(builder: (_) => ShowScreen(showKey: show.key)),
       ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Poster(url: kino.posterUrl(show), seed: show.key, width: _poster),
+            const SizedBox(width: 14),
+            Expanded(
+              // The text column is as tall as the poster and no taller: a long
+              // title takes the space the genres would have used, rather than
+              // growing the row and leaving the artwork stranded at the top.
+              child: SizedBox(
+                height: _poster / posterRatio,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        show.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: heading(18, color: palette.text),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      facts.join(' · ').toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: body(11, weight: 700, color: palette.muted),
+                    ),
+                    const Spacer(),
+                    if (summary.genres.isNotEmpty)
+                      // Language-neutral keys on the wire; named here, in the
+                      // reader's language. Clipped rather than wrapped — a row
+                      // that grows a line because a film has five genres is a
+                      // list that never lines up.
+                      ClipRect(
+                        child: Wrap(
+                          spacing: 6,
+                          clipBehavior: Clip.hardEdge,
+                          children: [
+                            for (final genre in summary.genres.take(_mostGenres))
+                              _GenreTag(name: genreName(genre, language)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A genre, small. Not `Chip`: that one is built for tapping and comes with the
+/// padding to prove it, and these are labels rather than controls.
+class _GenreTag extends StatelessWidget {
+  const _GenreTag({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Palette.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(border: Border.all(color: palette.line)),
+      child: Text(name, style: body(11, weight: 600, color: palette.muted)),
     );
   }
 }

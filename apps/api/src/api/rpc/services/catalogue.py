@@ -48,6 +48,9 @@ def _summary(row: tuple[Any, int, int]) -> pb.ShowSummary:
             **ShowOut.model_validate(show).model_dump(),
             episode_count=episodes,
             playable_count=playable,
+            year=show.year,
+            imdb_rating=show.imdb_rating,
+            genres=show.genres,
         )
     )
 

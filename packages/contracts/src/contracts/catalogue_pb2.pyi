@@ -147,14 +147,20 @@ class Show(_message.Message):
     def __init__(self, id: _Optional[int] = ..., key: _Optional[str] = ..., title: _Optional[str] = ..., poster: _Optional[str] = ..., created_at: _Optional[str] = ..., is_film: _Optional[bool] = ...) -> None: ...
 
 class ShowSummary(_message.Message):
-    __slots__ = ("show", "episode_count", "playable_count")
+    __slots__ = ("show", "episode_count", "playable_count", "year", "imdb_rating", "genres")
     SHOW_FIELD_NUMBER: _ClassVar[int]
     EPISODE_COUNT_FIELD_NUMBER: _ClassVar[int]
     PLAYABLE_COUNT_FIELD_NUMBER: _ClassVar[int]
+    YEAR_FIELD_NUMBER: _ClassVar[int]
+    IMDB_RATING_FIELD_NUMBER: _ClassVar[int]
+    GENRES_FIELD_NUMBER: _ClassVar[int]
     show: Show
     episode_count: int
     playable_count: int
-    def __init__(self, show: _Optional[_Union[Show, _Mapping]] = ..., episode_count: _Optional[int] = ..., playable_count: _Optional[int] = ...) -> None: ...
+    year: int
+    imdb_rating: float
+    genres: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, show: _Optional[_Union[Show, _Mapping]] = ..., episode_count: _Optional[int] = ..., playable_count: _Optional[int] = ..., year: _Optional[int] = ..., imdb_rating: _Optional[float] = ..., genres: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class ShowDetails(_message.Message):
     __slots__ = ("show", "original_title", "kind", "year", "year_end", "audio", "quality", "description", "duration", "age_rating", "genres", "countries", "directors", "starring", "imdb_id", "imdb_rating", "imdb_votes", "imdb_url")

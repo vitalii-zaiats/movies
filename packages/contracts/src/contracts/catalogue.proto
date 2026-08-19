@@ -104,11 +104,20 @@ message Show {
   bool is_film = 6;
 }
 
-// A show in a browse list: how much of it is here, counted by the server.
+// A show in a browse list: how much of it is here, counted by the server, and
+// the few facts a row can actually use.
+//
+// Deliberately not `ShowDetails`. A synopsis in every row of every listing is a
+// page of prose nobody asked for — but a year, a score and a couple of genres
+// are what a browse row is *for*, and fetching them per row would be a request
+// per tile.
 message ShowSummary {
   Show show = 1;
   uint32 episode_count = 2;
   uint32 playable_count = 3;
+  optional uint32 year = 4;
+  optional double imdb_rating = 5;
+  repeated string genres = 6;
 }
 
 // Everything the crawl knew. Kept off `Show` on purpose: that one rides along
