@@ -227,6 +227,11 @@ message ListShowsRequest {
   ShowOrder order = 3;
   uint32 limit = 4;
   uint32 offset = 5;
+  // What the source called this shape of thing: `film`, `series`, `cartoon`,
+  // `anime`. A different question from `series`, which is only ever a count of
+  // episodes — a cartoon and a film have the same shape and are not the same
+  // thing, and only the source can tell them apart.
+  optional string kind = 6;
 }
 
 message ListShowsResponse {
@@ -240,6 +245,7 @@ message StreamShowsRequest {
   ShowOrder order = 3;
   // Stop after this many. Zero means the whole catalogue.
   uint32 limit = 4;
+  optional string kind = 5;
 }
 
 message GetShowRequest {

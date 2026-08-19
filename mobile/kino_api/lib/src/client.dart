@@ -194,9 +194,13 @@ class KinoClient {
   Future<HealthResponse> health() =>
       _unary(catalogue.health(HealthRequest(), options: _options));
 
+  /// [kind] is what the source called it — `film`, `series`, `cartoon`,
+  /// `anime` — which is a different question from [series]: that one counts
+  /// episodes, and a cartoon has the same shape as a film.
   Future<ListShowsResponse> shows({
     String? q,
     bool? series,
+    String? kind,
     ShowOrder order = ShowOrder.SHOW_ORDER_UNSPECIFIED,
     int limit = 50,
     int offset = 0,
@@ -204,6 +208,7 @@ class KinoClient {
     final request = ListShowsRequest(order: order, limit: limit, offset: offset);
     if (q != null && q.isNotEmpty) request.q = q;
     if (series != null) request.series = series;
+    if (kind != null && kind.isNotEmpty) request.kind = kind;
     return _unary(catalogue.listShows(request, options: _options));
   }
 
@@ -211,12 +216,14 @@ class KinoClient {
   Stream<ShowSummary> allShows({
     String? q,
     bool? series,
+    String? kind,
     ShowOrder order = ShowOrder.SHOW_ORDER_UNSPECIFIED,
     int limit = 0,
   }) {
     final request = StreamShowsRequest(order: order, limit: limit);
     if (q != null && q.isNotEmpty) request.q = q;
     if (series != null) request.series = series;
+    if (kind != null && kind.isNotEmpty) request.kind = kind;
 
     final call = catalogue.streamShows(request, options: _options);
     _unawaited(_remember(call.headers));

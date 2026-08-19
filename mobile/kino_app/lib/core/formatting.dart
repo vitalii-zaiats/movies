@@ -18,14 +18,6 @@ String? episodeCode(Episode episode, {required bool isFilm}) {
   return 'S${season}E$number';
 }
 
-/// What a browse row says under the title.
-String showSubtitle(ShowSummary summary) {
-  if (summary.show.isFilm) {
-    return summary.playableCount > 0 ? 'FILM' : 'FILM · NO STREAM';
-  }
-  return '${summary.episodeCount} EPISODES · ${summary.playableCount} PLAYABLE';
-}
-
 /// A running time. Hours only when there are any — `04:12` beats `0:04:12`.
 String clock(Duration duration) {
   final seconds = duration.inSeconds;

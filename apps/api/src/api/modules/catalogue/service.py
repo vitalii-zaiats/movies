@@ -65,9 +65,15 @@ class CatalogueService:
         order: str,
         limit: int,
         offset: int,
+        kind: str | None = None,
     ) -> tuple[list[tuple[Show, int, int]], int]:
         return await self.shows.page(
-            title_like=title_like, series=series, order=order, limit=limit, offset=offset
+            title_like=title_like,
+            series=series,
+            kind=kind,
+            order=order,
+            limit=limit,
+            offset=offset,
         )
 
     async def show(self, key: str) -> Show:

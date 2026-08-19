@@ -273,18 +273,20 @@ class HealthResponse(_message.Message):
     def __init__(self, status: _Optional[str] = ..., shows: _Optional[int] = ..., episodes: _Optional[int] = ...) -> None: ...
 
 class ListShowsRequest(_message.Message):
-    __slots__ = ("q", "series", "order", "limit", "offset")
+    __slots__ = ("q", "series", "order", "limit", "offset", "kind")
     Q_FIELD_NUMBER: _ClassVar[int]
     SERIES_FIELD_NUMBER: _ClassVar[int]
     ORDER_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     OFFSET_FIELD_NUMBER: _ClassVar[int]
+    KIND_FIELD_NUMBER: _ClassVar[int]
     q: str
     series: bool
     order: ShowOrder
     limit: int
     offset: int
-    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ..., offset: _Optional[int] = ...) -> None: ...
+    kind: str
+    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ..., offset: _Optional[int] = ..., kind: _Optional[str] = ...) -> None: ...
 
 class ListShowsResponse(_message.Message):
     __slots__ = ("page", "items")
@@ -295,16 +297,18 @@ class ListShowsResponse(_message.Message):
     def __init__(self, page: _Optional[_Union[PageInfo, _Mapping]] = ..., items: _Optional[_Iterable[_Union[ShowSummary, _Mapping]]] = ...) -> None: ...
 
 class StreamShowsRequest(_message.Message):
-    __slots__ = ("q", "series", "order", "limit")
+    __slots__ = ("q", "series", "order", "limit", "kind")
     Q_FIELD_NUMBER: _ClassVar[int]
     SERIES_FIELD_NUMBER: _ClassVar[int]
     ORDER_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
+    KIND_FIELD_NUMBER: _ClassVar[int]
     q: str
     series: bool
     order: ShowOrder
     limit: int
-    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ...) -> None: ...
+    kind: str
+    def __init__(self, q: _Optional[str] = ..., series: _Optional[bool] = ..., order: _Optional[_Union[ShowOrder, str]] = ..., limit: _Optional[int] = ..., kind: _Optional[str] = ...) -> None: ...
 
 class GetShowRequest(_message.Message):
     __slots__ = ("key",)

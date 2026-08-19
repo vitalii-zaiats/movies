@@ -92,6 +92,7 @@ class CatalogueService(stubs.CatalogueServicer):
             rows, total = await rpc.services.catalogue.show_page(
                 title_like=request.q if request.HasField("q") else None,
                 series=request.series if request.HasField("series") else None,
+                kind=request.kind if request.HasField("kind") else None,
                 order=convert.SHOW_ORDERS[request.order],
                 limit=limit,
                 offset=offset,
@@ -118,6 +119,7 @@ class CatalogueService(stubs.CatalogueServicer):
                 rows, total = await rpc.services.catalogue.show_page(
                     title_like=request.q if request.HasField("q") else None,
                     series=request.series if request.HasField("series") else None,
+                    kind=request.kind if request.HasField("kind") else None,
                     order=convert.SHOW_ORDERS[request.order],
                     limit=CHUNK,
                     offset=offset,

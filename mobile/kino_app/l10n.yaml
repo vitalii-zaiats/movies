@@ -1,0 +1,5 @@
+# Where the translations live and what to call what comes out of them.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+nullable-getter: false

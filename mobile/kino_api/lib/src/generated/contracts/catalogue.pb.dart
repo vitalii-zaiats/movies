@@ -1596,6 +1596,7 @@ class ListShowsRequest extends $pb.GeneratedMessage {
     ShowOrder? order,
     $core.int? limit,
     $core.int? offset,
+    $core.String? kind,
   }) {
     final result = create();
     if (q != null) result.q = q;
@@ -1603,6 +1604,7 @@ class ListShowsRequest extends $pb.GeneratedMessage {
     if (order != null) result.order = order;
     if (limit != null) result.limit = limit;
     if (offset != null) result.offset = offset;
+    if (kind != null) result.kind = kind;
     return result;
   }
 
@@ -1625,6 +1627,7 @@ class ListShowsRequest extends $pb.GeneratedMessage {
         enumValues: ShowOrder.values)
     ..aI(4, _omitFieldNames ? '' : 'limit', fieldType: $pb.PbFieldType.OU3)
     ..aI(5, _omitFieldNames ? '' : 'offset', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(6, _omitFieldNames ? '' : 'kind')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1692,6 +1695,19 @@ class ListShowsRequest extends $pb.GeneratedMessage {
   $core.bool hasOffset() => $_has(4);
   @$pb.TagNumber(5)
   void clearOffset() => $_clearField(5);
+
+  /// What the source called this shape of thing: `film`, `series`, `cartoon`,
+  /// `anime`. A different question from `series`, which is only ever a count of
+  /// episodes — a cartoon and a film have the same shape and are not the same
+  /// thing, and only the source can tell them apart.
+  @$pb.TagNumber(6)
+  $core.String get kind => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set kind($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasKind() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearKind() => $_clearField(6);
 }
 
 class ListShowsResponse extends $pb.GeneratedMessage {
@@ -1764,12 +1780,14 @@ class StreamShowsRequest extends $pb.GeneratedMessage {
     $core.bool? series,
     ShowOrder? order,
     $core.int? limit,
+    $core.String? kind,
   }) {
     final result = create();
     if (q != null) result.q = q;
     if (series != null) result.series = series;
     if (order != null) result.order = order;
     if (limit != null) result.limit = limit;
+    if (kind != null) result.kind = kind;
     return result;
   }
 
@@ -1791,6 +1809,7 @@ class StreamShowsRequest extends $pb.GeneratedMessage {
     ..aE<ShowOrder>(3, _omitFieldNames ? '' : 'order',
         enumValues: ShowOrder.values)
     ..aI(4, _omitFieldNames ? '' : 'limit', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(5, _omitFieldNames ? '' : 'kind')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1848,6 +1867,15 @@ class StreamShowsRequest extends $pb.GeneratedMessage {
   $core.bool hasLimit() => $_has(3);
   @$pb.TagNumber(4)
   void clearLimit() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get kind => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set kind($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasKind() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearKind() => $_clearField(5);
 }
 
 class GetShowRequest extends $pb.GeneratedMessage {

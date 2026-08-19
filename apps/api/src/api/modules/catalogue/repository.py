@@ -29,6 +29,7 @@ class ShowRepository(Repository[Show]):
         *,
         title_like: str | None = None,
         series: bool | None = None,
+        kind: str | None = None,
         order: str = "key",
         limit: int = 50,
         offset: int = 0,
@@ -36,8 +37,13 @@ class ShowRepository(Repository[Show]):
         """Shows with their episode counts, plus the total that matched.
 
         The counts come from one grouped subquery rather than a query per show —
-        that difference is the whole reason this method exists. `series` reads
-        them as a shape: more than one episode is a series, exactly one is a film.
+        that difference is the whole reason this method exists.
+
+        `series` and `kind` ask different questions and both are worth having.
+        `series` is a *shape*: more than one episode is a series, exactly one is
+        a film, and that is true however the row got here. `kind` is what the
+        source called it — film, series, cartoon, anime — which is the only way
+        to tell a cartoon from a film, because their shapes are identical.
         """
         counts = (
             select(
@@ -57,6 +63,8 @@ class ShowRepository(Repository[Show]):
             query = query.where(Show.title.ilike(f"%{title_like}%"))
         if series is not None:
             query = query.where(episodes > 1 if series else episodes == 1)
+        if kind:
+            query = query.where(Show.kind == kind)
 
         total = await self.session.scalar(select(func.count()).select_from(query.subquery()))
         rows = await self.session.execute(query.order_by(*_show_order(order)).limit(limit).offset(offset))

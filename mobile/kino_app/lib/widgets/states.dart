@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../core/kino.dart';
 import '../core/theme.dart';
+import '../l10n/app_localizations.dart';
 
 /// Not named `Loading`: that is one of the three states in `async_value.dart`,
 /// and a widget with the same name would have every screen importing two of
@@ -34,6 +35,7 @@ class Failed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -43,14 +45,14 @@ class Failed extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('COULDN’T REACH THE CATALOGUE', style: kicker(palette.accent)),
+            Text(l10n.couldntReach.toUpperCase(), style: kicker(palette.accent)),
             const SizedBox(height: 8),
             Text('$error', style: body(13, color: palette.text)),
             const SizedBox(height: 8),
-            Text('tried $host:$grpcPort', style: body(12, color: palette.muted)),
+            Text(l10n.triedAddress('$host:$grpcPort'), style: body(12, color: palette.muted)),
             if (onRetry != null) ...[
               const SizedBox(height: 12),
-              FilledButton(onPressed: onRetry, child: const Text('TRY AGAIN')),
+              FilledButton(onPressed: onRetry, child: Text(l10n.tryAgain.toUpperCase())),
             ],
           ],
         ),

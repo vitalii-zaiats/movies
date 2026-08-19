@@ -22,6 +22,7 @@ import 'package:video_player/video_player.dart';
 import '../../core/formatting.dart';
 import '../../core/kino.dart';
 import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/glyph.dart';
 
 /// How often a position is worth writing down. Ten seconds of lost place is
@@ -110,7 +111,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Future<void> _open({Track? voice}) async {
     final url = voice == null ? _kino.streamUrl(widget.episode) : _kino.trackUrl(voice);
     if (url == null) {
-      setState(() => _problem = 'This episode was never packaged.');
+      // A marker rather than a sentence: what language it is said in is the
+      // screen's business, and this class has no `BuildContext`.
+      setState(() => _problem = const Unpackaged());
       return;
     }
 
@@ -303,6 +306,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
 /// stream lives on answered 502 — which ashdi does often enough to have its own
 /// retry pass in the resolver. Neither is the viewer's doing and both are worth
 /// reading, so this is paper on ink rather than grey on black.
+/// "Nothing was ever packaged for this episode" — said as a value, so the
+/// screen can say it in the reader's language.
+class Unpackaged {
+  const Unpackaged();
+}
+
 class _Failed extends StatelessWidget {
   const _Failed({required this.problem});
 
@@ -310,8 +319,10 @@ class _Failed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = '$problem';
     final upstream = text.contains('502');
+    final unpackaged = problem is Unpackaged;
 
     return Center(
       child: Padding(
@@ -320,15 +331,19 @@ class _Failed extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              upstream ? 'THE SOURCE DIDN’T ANSWER' : 'NOTHING TO PLAY',
+              (upstream ? l10n.sourceDidntAnswer : l10n.nothingToPlay).toUpperCase(),
               style: kicker(accent500),
             ),
             const SizedBox(height: 10),
             Text(
-              upstream
-                  ? 'The stream is registered, but the host behind it returned 502. '
-                      'Worth trying again later.'
-                  : text,
+              switch ((upstream, unpackaged)) {
+                (true, _) => l10n.upstreamRefused,
+                (_, true) => l10n.neverPackaged,
+                // Anything else is the platform's own words, and translating
+                // them is not this app's job — a codec error should reach
+                // whoever is debugging it intact.
+                _ => text,
+              },
               textAlign: TextAlign.center,
               style: body(14, color: inkMuted),
             ),
@@ -506,7 +521,7 @@ class _Chrome extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'OK — PLAY OR PAUSE · ◀ ▶ — 10 SECONDS · BACK — LEAVE',
+                      AppLocalizations.of(context).remoteHint.toUpperCase(),
                       style: body(11, weight: 600, color: inkMuted),
                     ),
                   ),

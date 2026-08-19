@@ -628,10 +628,12 @@ const ListShowsRequest$json = {
     },
     {'1': 'limit', '3': 4, '4': 1, '5': 13, '10': 'limit'},
     {'1': 'offset', '3': 5, '4': 1, '5': 13, '10': 'offset'},
+    {'1': 'kind', '3': 6, '4': 1, '5': 9, '9': 2, '10': 'kind', '17': true},
   ],
   '8': [
     {'1': '_q'},
     {'1': '_series'},
+    {'1': '_kind'},
   ],
 };
 
@@ -639,8 +641,8 @@ const ListShowsRequest$json = {
 final $typed_data.Uint8List listShowsRequestDescriptor = $convert.base64Decode(
     'ChBMaXN0U2hvd3NSZXF1ZXN0EhEKAXEYASABKAlIAFIBcYgBARIbCgZzZXJpZXMYAiABKAhIAV'
     'IGc2VyaWVziAEBEi0KBW9yZGVyGAMgASgOMhcuY2F0YWxvZ3VlLnYxLlNob3dPcmRlclIFb3Jk'
-    'ZXISFAoFbGltaXQYBCABKA1SBWxpbWl0EhYKBm9mZnNldBgFIAEoDVIGb2Zmc2V0QgQKAl9xQg'
-    'kKB19zZXJpZXM=');
+    'ZXISFAoFbGltaXQYBCABKA1SBWxpbWl0EhYKBm9mZnNldBgFIAEoDVIGb2Zmc2V0EhcKBGtpbm'
+    'QYBiABKAlIAlIEa2luZIgBAUIECgJfcUIJCgdfc2VyaWVzQgcKBV9raW5k');
 
 @$core.Deprecated('Use listShowsResponseDescriptor instead')
 const ListShowsResponse$json = {
@@ -686,10 +688,12 @@ const StreamShowsRequest$json = {
       '10': 'order'
     },
     {'1': 'limit', '3': 4, '4': 1, '5': 13, '10': 'limit'},
+    {'1': 'kind', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'kind', '17': true},
   ],
   '8': [
     {'1': '_q'},
     {'1': '_series'},
+    {'1': '_kind'},
   ],
 };
 
@@ -697,7 +701,8 @@ const StreamShowsRequest$json = {
 final $typed_data.Uint8List streamShowsRequestDescriptor = $convert.base64Decode(
     'ChJTdHJlYW1TaG93c1JlcXVlc3QSEQoBcRgBIAEoCUgAUgFxiAEBEhsKBnNlcmllcxgCIAEoCE'
     'gBUgZzZXJpZXOIAQESLQoFb3JkZXIYAyABKA4yFy5jYXRhbG9ndWUudjEuU2hvd09yZGVyUgVv'
-    'cmRlchIUCgVsaW1pdBgEIAEoDVIFbGltaXRCBAoCX3FCCQoHX3Nlcmllcw==');
+    'cmRlchIUCgVsaW1pdBgEIAEoDVIFbGltaXQSFwoEa2luZBgFIAEoCUgCUgRraW5kiAEBQgQKAl'
+    '9xQgkKB19zZXJpZXNCBwoFX2tpbmQ=');
 
 @$core.Deprecated('Use getShowRequestDescriptor instead')
 const GetShowRequest$json = {

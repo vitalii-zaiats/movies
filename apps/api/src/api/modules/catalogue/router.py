@@ -33,12 +33,15 @@ async def list_shows(
     catalogue: Catalogue,
     q: Annotated[str | None, Query(description="substring of the title")] = None,
     series: Annotated[bool | None, Query(description="true: several episodes; false: a film")] = None,
+    kind: Annotated[
+        str | None, Query(description="what the source called it: film, series, cartoon, anime")
+    ] = None,
     order: Annotated[str, Query(pattern="^(key|added|title|newest|oldest)$")] = "key",
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ShowPage:
     rows, total = await catalogue.show_page(
-        title_like=q, series=series, order=order, limit=limit, offset=offset
+        title_like=q, series=series, kind=kind, order=order, limit=limit, offset=offset
     )
     return ShowPage(
         total=total,

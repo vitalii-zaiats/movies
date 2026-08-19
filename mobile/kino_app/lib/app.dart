@@ -1,20 +1,23 @@
-/// The app: two scopes, two themes, and one screen to start on.
+/// The app: two scopes, two themes, two languages, and one screen to start on.
 ///
-/// One binary in two moods and on two kinds of device. On a phone you touch
+/// One binary in several moods and on two kinds of device. On a phone you touch
 /// things; on a television there is nothing to touch — a remote moves focus and
 /// presses it, which in Flutter is `NavigationMode.directional`, and once that
 /// is on, whatever is focused has to *look* focused.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kino_api/kino_api.dart';
 
 import 'core/kino.dart';
 import 'core/settings.dart';
 import 'core/theme.dart';
 import 'features/home/home_screen.dart';
+import 'l10n/app_localizations.dart';
 
-/// The chosen theme, handed down so the account screen can change it.
+/// The chosen theme and language, handed down so the account screen can change
+/// them.
 class SettingsScope extends InheritedNotifier<Settings> {
   const SettingsScope({required Settings super.notifier, required super.child, super.key});
 
@@ -52,7 +55,17 @@ class KinoApp extends StatelessWidget {
             // The same design system the web app wears, in both lights.
             theme: modernist(Brightness.light),
             darkTheme: modernist(Brightness.dark),
-            themeMode: settings.value,
+            themeMode: settings.theme,
+            // Null follows the phone; anything else is a deliberate choice made
+            // on the account screen.
+            locale: settings.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 // A remote moves focus; it doesn't tap. Without this, focus is

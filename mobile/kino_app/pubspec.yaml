@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   # The whole API surface. A path dependency because the two are one repo and
   # the contract they share is regenerated for both at once.
   kino_api:
@@ -29,6 +32,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # `AppLocalizations` is generated from lib/l10n/*.arb — see l10n.yaml.
+  generate: true
 
   # The web app pulls Archivo off Google Fonts; a phone shouldn't wait for a
   # download to draw its first screen, so the variable file is bundled. One

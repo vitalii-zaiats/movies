@@ -15,6 +15,7 @@ import '../../core/async_value.dart';
 import '../../core/formatting.dart';
 import '../../core/kino.dart';
 import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/glyph.dart';
 import '../../widgets/section_head.dart';
 import '../../widgets/states.dart';
@@ -44,10 +45,12 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return ListenableBuilder(
       listenable: _model,
       builder: (context, _) => Scaffold(
-        appBar: AppBar(title: const Text('Account')),
+        appBar: AppBar(title: Text(l10n.account)),
         body: switch (_model.state) {
           Loading<User>() => const Spinner(),
           Failure<User>(:final error) => Failed(error: error, onRetry: _model.load),
@@ -67,6 +70,7 @@ class _Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return ListView(
       children: [
@@ -76,7 +80,7 @@ class _Body extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                user.isGuest ? 'GUEST' : 'ACCOUNT',
+                (user.isGuest ? l10n.guest : l10n.account).toUpperCase(),
                 style: kicker(palette.accent),
               ),
               const SizedBox(height: 4),
@@ -86,34 +90,66 @@ class _Body extends StatelessWidget {
             ],
           ),
         ),
-        if (model.said != null)
+        if (model.note != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Text(
-              model.said!,
-              style: body(13, weight: 600, color: model.wentWrong ? palette.accent : palette.muted),
-            ),
+            child: _Said(note: model.note!),
           ),
 
-        const SectionHead('Your name'),
+        SectionHead(l10n.yourName),
         _RenameForm(model: model, user: user),
 
-        // A guest is one device away from losing everything they've watched;
+        // A guest is one device away from losing everything they have watched;
         // this is the fix, and it keeps the row rather than starting a new one.
         if (user.isGuest) ...[
-          const SectionHead('Create an account'),
+          SectionHead(l10n.createAnAccount),
           _ClaimForm(model: model),
-          const SectionHead('Already have one'),
+          SectionHead(l10n.alreadyHaveOne),
           _LoginForm(model: model),
         ],
 
-        const SectionHead('Appearance'),
+        SectionHead(l10n.appearance),
         const _ThemeChoice(),
+        SectionHead(l10n.language),
+        const _LanguageChoice(),
 
-        const SectionHead('This device'),
+        SectionHead(l10n.thisDevice),
         _Actions(model: model, user: user),
         const SizedBox(height: 32),
       ],
+    );
+  }
+}
+
+/// The last thing that happened, in the reader's language — the view model
+/// reports facts, and this is where they become sentences.
+class _Said extends StatelessWidget {
+  const _Said({required this.note});
+
+  final Note note;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    final (text, wrong) = switch (note) {
+      Done(:final did, :final detail) => (
+          switch (did) {
+            Did.renamed => l10n.renamed(detail),
+            Did.created => l10n.accountCreated(detail),
+            Did.signedIn => l10n.signedInAs(detail),
+            Did.signedOut => l10n.signedOut,
+            Did.switched => l10n.nowWatchingAs(detail),
+          },
+          false,
+        ),
+      Refused(:final problem) => ('$problem', true),
+    };
+
+    return Text(
+      text,
+      style: body(13, weight: 600, color: wrong ? palette.accent : palette.muted),
     );
   }
 }
@@ -126,12 +162,14 @@ class _Facts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
+
     final rows = <(String, String)>[
-      if (user.hasEmail()) ('Email', user.email),
-      ('Id', user.publicId),
-      ('Role', user.role == Role.ROLE_ADMIN ? 'admin' : 'user'),
-      ('Since', day(user.createdAt)),
-      ('Last seen', day(user.lastSeenAt)),
+      if (user.hasEmail()) (l10n.labelEmail, user.email),
+      (l10n.labelId, user.publicId),
+      (l10n.labelRole, user.role == Role.ROLE_ADMIN ? l10n.roleAdmin : l10n.roleUser),
+      (l10n.labelSince, day(user.createdAt)),
+      (l10n.labelLastSeen, day(user.lastSeenAt)),
     ];
 
     return Column(
@@ -143,8 +181,11 @@ class _Facts extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 96,
-                  child: Text(name.toUpperCase(), style: body(11, weight: 700, color: palette.faint)),
+                  width: 108,
+                  child: Text(
+                    name.toUpperCase(),
+                    style: body(11, weight: 700, color: palette.faint),
+                  ),
                 ),
                 Expanded(child: Text(value, style: body(13, color: palette.text))),
               ],
@@ -176,6 +217,8 @@ class _RenameFormState extends State<_RenameForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -184,14 +227,14 @@ class _RenameFormState extends State<_RenameForm> {
             child: TextField(
               controller: _name,
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(labelText: 'Display name'),
+              decoration: InputDecoration(labelText: l10n.displayName),
               onSubmitted: widget.model.rename,
             ),
           ),
           const SizedBox(width: 8),
           OutlinedButton(
             onPressed: widget.model.busy ? null : () => widget.model.rename(_name.text),
-            child: const Text('SAVE'),
+            child: Text(l10n.save.toUpperCase()),
           ),
         ],
       ),
@@ -199,8 +242,8 @@ class _RenameFormState extends State<_RenameForm> {
   }
 }
 
-/// Register. Deliberately not called "sign up" anywhere the user can see: they
-/// already have an account, this gives it a way back in from another device.
+/// Register. Not called "sign up" anywhere the reader can see it: they already
+/// have an account, and this gives it a way back in from another device.
 class _ClaimForm extends StatefulWidget {
   const _ClaimForm({required this.model});
 
@@ -232,6 +275,7 @@ class _ClaimFormState extends State<_ClaimForm> {
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -240,18 +284,14 @@ class _ClaimFormState extends State<_ClaimForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Keeps everything you have watched — the email and password are '
-              'written onto this same account.',
-              style: body(13, color: palette.muted),
-            ),
+            Text(l10n.createAccountBlurb, style: body(13, color: palette.muted)),
             const SizedBox(height: 12),
             TextFormField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: _email_,
+              decoration: InputDecoration(labelText: l10n.labelEmail),
+              validator: (value) => _email_(value, l10n),
             ),
             const SizedBox(height: 8),
             TextFormField(
@@ -259,7 +299,7 @@ class _ClaimFormState extends State<_ClaimForm> {
               obscureText: _hidden,
               autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
-                labelText: 'Password',
+                labelText: l10n.password,
                 suffixIcon: IconButton(
                   icon: Glyph(_hidden ? Glyphs.eye : Glyphs.eyeShut, size: 18),
                   onPressed: () => setState(() => _hidden = !_hidden),
@@ -267,8 +307,7 @@ class _ClaimFormState extends State<_ClaimForm> {
               ),
               // The server's rule, said here so a refusal doesn't cost a round
               // trip. It is still the server's rule; this only saves the trip.
-              validator: (value) =>
-                  (value?.length ?? 0) < 8 ? 'At least eight characters' : null,
+              validator: (value) => (value?.length ?? 0) < 8 ? l10n.shortPassword : null,
               onFieldSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 12),
@@ -276,7 +315,7 @@ class _ClaimFormState extends State<_ClaimForm> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: widget.model.busy ? null : _submit,
-                child: const Text('CREATE ACCOUNT'),
+                child: Text(l10n.createAccount.toUpperCase()),
               ),
             ),
           ],
@@ -316,6 +355,7 @@ class _LoginFormState extends State<_LoginForm> {
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -324,26 +364,22 @@ class _LoginFormState extends State<_LoginForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Signing in swaps this device to that account. The guest you are '
-              'now stays where it is.',
-              style: body(13, color: palette.muted),
-            ),
+            Text(l10n.signInBlurb, style: body(13, color: palette.muted)),
             const SizedBox(height: 12),
             TextFormField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: _email_,
+              decoration: InputDecoration(labelText: l10n.labelEmail),
+              validator: (value) => _email_(value, l10n),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _password,
               obscureText: true,
               autofillHints: const [AutofillHints.password],
-              decoration: const InputDecoration(labelText: 'Password'),
-              validator: (value) => (value?.isEmpty ?? true) ? 'Required' : null,
+              decoration: InputDecoration(labelText: l10n.password),
+              validator: (value) => (value?.isEmpty ?? true) ? l10n.fieldRequired : null,
               onFieldSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 12),
@@ -351,7 +387,7 @@ class _LoginFormState extends State<_LoginForm> {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: widget.model.busy ? null : _submit,
-                child: const Text('SIGN IN'),
+                child: Text(l10n.signIn.toUpperCase()),
               ),
             ),
           ],
@@ -361,13 +397,13 @@ class _LoginFormState extends State<_LoginForm> {
   }
 }
 
-/// Enough of a check to catch a typo, and no more — what counts as an address
-/// is the server's business, and a clever pattern here only ever rejects
-/// somebody's perfectly good email.
-String? _email_(String? value) {
+/// Enough of a check to catch a typo, and no more — what counts as an address is
+/// the server's business, and a clever pattern here only ever rejects somebody's
+/// perfectly good email.
+String? _email_(String? value, AppLocalizations l10n) {
   final text = value?.trim() ?? '';
-  if (text.isEmpty) return 'Required';
-  return text.contains('@') && text.contains('.') ? null : 'Doesn’t look like an email';
+  if (text.isEmpty) return l10n.fieldRequired;
+  return text.contains('@') && text.contains('.') ? null : l10n.notAnEmail;
 }
 
 class _ThemeChoice extends StatelessWidget {
@@ -376,6 +412,7 @@ class _ThemeChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = SettingsScope.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -383,14 +420,48 @@ class _ThemeChoice extends StatelessWidget {
         style: SegmentedButton.styleFrom(
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
-        segments: const [
-          ButtonSegment(value: ThemeMode.system, label: Text('System')),
-          ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-          ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+        segments: [
+          ButtonSegment(value: ThemeMode.system, label: Text(l10n.themeSystem)),
+          ButtonSegment(value: ThemeMode.light, label: Text(l10n.themeLight)),
+          ButtonSegment(value: ThemeMode.dark, label: Text(l10n.themeDark)),
         ],
-        selected: {settings.value},
+        selected: {settings.theme},
         showSelectedIcon: false,
-        onSelectionChanged: (chosen) => settings.choose(chosen.first),
+        onSelectionChanged: (chosen) => settings.chooseTheme(chosen.first),
+      ),
+    );
+  }
+}
+
+/// Which language, with "the one the phone is set to" as its own option rather
+/// than as a hidden default — a reader who picks Ukrainian on an English phone
+/// should keep it, and one who picks nothing should follow the phone.
+class _LanguageChoice extends StatelessWidget {
+  const _LanguageChoice();
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = SettingsScope.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SegmentedButton<String>(
+        style: SegmentedButton.styleFrom(
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        ),
+        segments: [
+          ButtonSegment(value: '', label: Text(l10n.languageSystem)),
+          // Named in themselves, always: a reader looking for their own language
+          // should not have to read another one to find it.
+          const ButtonSegment(value: 'uk', label: Text('Українська')),
+          const ButtonSegment(value: 'en', label: Text('English')),
+        ],
+        selected: {settings.locale?.languageCode ?? ''},
+        showSelectedIcon: false,
+        onSelectionChanged: (chosen) => settings.chooseLocale(
+          chosen.first.isEmpty ? null : Locale(chosen.first),
+        ),
       ),
     );
   }
@@ -405,26 +476,21 @@ class _Actions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       children: [
         if (!user.isGuest)
           ListTile(
             leading: const Glyph(Glyphs.out),
-            title: const Text('Sign out'),
-            subtitle: Text(
-              'Back to being a guest on this device.',
-              style: body(12, color: palette.muted),
-            ),
+            title: Text(l10n.signOut),
+            subtitle: Text(l10n.signOutBlurb, style: body(12, color: palette.muted)),
             onTap: model.busy ? null : model.logout,
           ),
         ListTile(
           leading: const Glyph(Glyphs.newPerson),
-          title: const Text('Watch as somebody else'),
-          subtitle: Text(
-            'A second identity on this device, with its own history.',
-            style: body(12, color: palette.muted),
-          ),
+          title: Text(l10n.watchAsSomebodyElse),
+          subtitle: Text(l10n.watchAsBlurb, style: body(12, color: palette.muted)),
           onTap: model.busy ? null : model.newGuest,
         ),
       ],
