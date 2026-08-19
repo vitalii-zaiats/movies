@@ -113,6 +113,22 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
+  /// Just the rail, and nothing else.
+  ///
+  /// What moves it is watching something, and the moment that happens is
+  /// knowable: the player is closed. A whole `refresh` there would throw away
+  /// the page of results underneath and scroll the reader back to the top for
+  /// news about one tile.
+  Future<void> refreshRail() async {
+    try {
+      going = await _kino.continueWatching(limit: 12);
+      notifyListeners();
+    } catch (_) {
+      // The rail is a convenience. If it can't be had, the page it sits on is
+      // still perfectly usable.
+    }
+  }
+
   Future<void> search(String text) {
     query = text.trim();
     return refresh();

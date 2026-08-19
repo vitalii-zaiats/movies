@@ -205,5 +205,14 @@
   "voice": "Voice",
   "defaultVoice": "As published",
   "anyLanguage": "Any language",
-  "filterByLanguage": "Filter by language"
+  "filterByLanguage": "Filter by language",
+  "resumeAt": "Continue · {at}",
+  "@resumeAt": {
+    "placeholders": {
+      "at": {
+        "type": "String"
+      }
+    }
+  },
+  "startAgain": "Start again"
 }

@@ -589,7 +589,12 @@ class _Credits extends StatelessWidget {
 /// Play, and what it will play: the first episode with a stream behind it, which
 /// for a film is the film. A title where nothing was ever packaged says so
 /// rather than offering a button that can only disappoint.
-class _PlayAction extends StatelessWidget {
+///
+/// A button that says "play" and then drops you forty minutes in is lying by
+/// omission, so where there is a bookmark it says so — and offers the other
+/// thing, because the second most common reason to open a half-watched film is
+/// to start it again.
+class _PlayAction extends StatefulWidget {
   const _PlayAction({required this.episodes, required this.show, this.voice});
 
   /// The episodes currently on offer — for a series, the chosen season, so Play
@@ -599,12 +604,63 @@ class _PlayAction extends StatelessWidget {
   final String? voice;
 
   @override
+  State<_PlayAction> createState() => _PlayActionState();
+}
+
+class _PlayActionState extends State<_PlayAction> {
+  Progress? _bookmark;
+  int? _asked;
+
+  Episode? get _first =>
+      widget.episodes.where((episode) => episode.hasPlaylist()).firstOrNull;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _look();
+  }
+
+  @override
+  void didUpdateWidget(_PlayAction old) {
+    super.didUpdateWidget(old);
+    // The season picker moves the target; the bookmark has to follow it.
+    _look();
+  }
+
+  Future<void> _look() async {
+    final episode = _first;
+    if (episode == null || episode.id == _asked) return;
+    _asked = episode.id;
+
+    // Null is the ordinary answer — most titles have never been opened — and
+    // the server says so with NOT_FOUND, which the client turns into null.
+    final found = await Kino.read(context).progress(episode.id);
+    if (mounted && _asked == episode.id) setState(() => _bookmark = found);
+  }
+
+  void _play({bool startOver = false}) {
+    final episode = _first;
+    if (episode == null) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PlayerScreen(
+          episode: episode,
+          show: widget.show,
+          voice: widget.voice,
+          startOver: startOver,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
     final l10n = AppLocalizations.of(context);
-    final playable = episodes.where((episode) => episode.hasPlaylist());
+    final episode = _first;
 
-    if (playable.isEmpty) {
+    if (episode == null) {
       return Row(
         children: [
           Glyph(Glyphs.blocked, size: 18, color: palette.faint),
@@ -614,21 +670,32 @@ class _PlayAction extends StatelessWidget {
       );
     }
 
-    final first = playable.first;
-    final code = episodeCode(first, isFilm: show.isFilm);
+    final code = episodeCode(episode, isFilm: widget.show.isFilm);
+    // A finished film is not "continue" — it is one you might watch again.
+    final mark = _bookmark;
+    final resumes = mark != null && !mark.completed && mark.positionSeconds > 1;
 
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        autofocus: Kino.isTv(context),
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => PlayerScreen(episode: first, show: show, voice: voice),
-          ),
+    final label_ = resumes
+        ? l10n.resumeAt(clock(Duration(seconds: mark.positionSeconds.round())))
+        : (code == null ? l10n.play : l10n.playEpisode(code));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          autofocus: Kino.isTv(context),
+          onPressed: () => _play(),
+          icon: const Glyph(Glyphs.play, size: 18),
+          label: Text(label_.toUpperCase()),
         ),
-        icon: const Glyph(Glyphs.play, size: 18),
-        label: Text((code == null ? l10n.play : l10n.playEpisode(code)).toUpperCase()),
-      ),
+        if (resumes) ...[
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: () => _play(startOver: true),
+            child: Text(l10n.startAgain.toUpperCase()),
+          ),
+        ],
+      ],
     );
   }
 }

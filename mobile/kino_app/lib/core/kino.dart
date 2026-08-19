@@ -34,7 +34,19 @@ KinoClient connect() => KinoClient(
 /// `MainActivity` passes the answer over.
 const _device = MethodChannel('tv.kino/device');
 
+/// Wear the television layout anywhere:
+///
+///     flutter run -d macos --dart-define=KINO_TV=true
+///
+/// For looking at the leanback screens on a desktop, where `UiModeManager`
+/// isn't. Most of that layout is testable there — a remote sends arrow keys and
+/// Select, which is what a keyboard sends — and the one thing that isn't is the
+/// question this flag answers.
+const forcedTelevision = bool.fromEnvironment('KINO_TV');
+
 Future<bool> onTelevision() async {
+  if (forcedTelevision) return true;
+
   try {
     return await _device.invokeMethod<bool>('isTelevision') ?? false;
   } on MissingPluginException {

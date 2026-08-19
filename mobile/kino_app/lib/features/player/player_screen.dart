@@ -41,6 +41,7 @@ class PlayerScreen extends StatefulWidget {
     required this.episode,
     required this.show,
     this.voice,
+    this.startOver = false,
     super.key,
   });
 
@@ -55,6 +56,10 @@ class PlayerScreen extends StatefulWidget {
   /// from different studios at different times, and a gap in one is not a
   /// reason to refuse the episode.
   final String? voice;
+
+  /// Open at the beginning even though there is a bookmark. Somebody asked to
+  /// start again, and the position they left is not what they want back.
+  final bool startOver;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -148,7 +153,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     // Where to open: a voice swap carries on where the last one stopped, a
     // fresh episode asks the server where it was left.
     var start = previous?.value.position ?? Duration.zero;
-    if (previous == null) {
+    if (previous == null && !widget.startOver) {
       final saved = await _kino.progress(widget.episode.id);
       if (saved != null && !saved.completed) {
         start = Duration(milliseconds: (saved.positionSeconds * 1000).round());

@@ -7,6 +7,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grpc/grpc.dart';
 import 'package:kino_api/kino_api.dart';
@@ -101,6 +102,13 @@ class _Catalogue extends CatalogueServiceBase {
 
 void main() {
   testWidgets('boots as a guest and draws what the catalogue sent', (tester) async {
+    // A phone-shaped window: the home screen draws rows below this width and a
+    // grid of posters above it, and the assertions below are about the rows.
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final server = Server.create(services: [_Accounts(), _Watching(), _Catalogue()]);
     await server.serve(address: InternetAddress.loopbackIPv4, port: 0);
 
@@ -133,6 +141,16 @@ void main() {
     expect(find.text('FILM'), findsOneWidget);
     expect(find.text('61 EPISODES · 60 PLAYABLE'), findsOneWidget);
     expect(find.text('2 of 2'), findsOneWidget);
+
+    // Widen it and the same catalogue comes back as cards. The tile has room
+    // for a count but not for the second half of the row's sentence, which is
+    // how the two layouts can be told apart from here.
+    tester.view.physicalSize = const Size(2400, 1600);
+    tester.view.devicePixelRatio = 2;
+    await tester.pump();
+
+    expect(find.text('61 EPISODES · 60 PLAYABLE'), findsNothing);
+    expect(find.text('61 EPISODES'), findsOneWidget);
 
     // Shutting both down is real I/O too. Bounded, because a channel with a
     // half-open connection can wait a long time and this is a teardown, not an

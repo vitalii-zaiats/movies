@@ -17,6 +17,10 @@ import '../player/player_screen.dart';
 import '../show/show_screen.dart';
 import 'home_view_model.dart';
 
+/// Where a phone stops and a window begins. Not a device check: a phone held
+/// sideways and a small window are the same problem and want the same answer.
+const _wide = 700.0;
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -24,7 +28,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final HomeViewModel _model;
   late final TabController _tabs;
   final _scroll = ScrollController();
@@ -38,10 +43,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _model = HomeViewModel(Kino.read(context))..start();
     _tabs = TabController(length: Browse.values.length, vsync: this)..addListener(_tabChanged);
     _scroll.addListener(_maybeLoadMore);
+    // Coming back from the background is the other way progress changes without
+    // this screen doing anything: it may have moved on another device, or in
+    // this app before it was suspended.
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _model.refreshRail();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabs.dispose();
     _scroll.dispose();
     _search.dispose();
@@ -117,7 +132,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Failed(error: _model.error!, onRetry: _model.refresh),
                 ),
               if (_model.going.isNotEmpty)
-                SliverToBoxAdapter(child: _ContinueRail(entries: _model.going)),
+                SliverToBoxAdapter(
+                  child: _ContinueRail(entries: _model.going, onReturn: _model.refreshRail),
+                ),
               SliverToBoxAdapter(
                 child: SectionHead(
                   l10n.sectionCount(
@@ -126,17 +143,46 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-              SliverList.separated(
-                itemCount: _model.shows.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                // On a television the first row takes focus, so a remote has
-                // somewhere to be the moment the list arrives. On a phone
-                // nothing is focused and nothing should be.
-                itemBuilder: (context, index) => _ShowRow(
-                  summary: _model.shows[index],
-                  first: index == 0 && _model.going.isEmpty,
+              // A phone gets rows; anything wider gets the web app's grid of
+              // posters. One column of 78-pixel stamps across a desktop window
+              // is three quarters empty space, and the artwork is the best
+              // thing these sources give us.
+              if (MediaQuery.sizeOf(context).width < _wide)
+                SliverList.separated(
+                  itemCount: _model.shows.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  // On a television the first row takes focus, so a remote has
+                  // somewhere to be the moment the list arrives. On a phone
+                  // nothing is focused and nothing should be.
+                  itemBuilder: (context, index) => _ShowRow(
+                    summary: _model.shows[index],
+                    first: index == 0 && _model.going.isEmpty,
+                    onReturn: _model.refreshRail,
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverGrid.builder(
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      // `--grid-card` from the web's tokens: the narrowest a
+                      // tile may get before a poster stops being one.
+                      maxCrossAxisExtent: 200,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      // Poster plus the caption under it. The tile lets its
+                      // body take whatever is left, so a rounding error here
+                      // costs a pixel of white rather than a stripe of orange.
+                      childAspectRatio: 0.58,
+                    ),
+                    itemCount: _model.shows.length,
+                    itemBuilder: (context, index) => _ShowTile(
+                      summary: _model.shows[index],
+                      first: index == 0 && _model.going.isEmpty,
+                      onReturn: _model.refreshRail,
+                    ),
+                  ),
                 ),
-              ),
               SliverToBoxAdapter(child: _Footer(model: _model)),
             ],
           ),
@@ -236,9 +282,13 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _ContinueRail extends StatelessWidget {
-  const _ContinueRail({required this.entries});
+  const _ContinueRail({required this.entries, required this.onReturn});
 
   final List<HistoryEntry> entries;
+
+  /// Called when whatever this opened is closed again — the one moment the rail
+  /// is reliably out of date.
+  final Future<void> Function() onReturn;
 
   // A horizontal list has to be given a height, and a title is two lines of a
   // font whose real line height comes from its own metrics — so any number
@@ -285,14 +335,16 @@ class _ContinueRail extends StatelessWidget {
                 child: InkWell(
                   autofocus: index == 0 && Kino.isTv(context),
                   focusColor: Theme.of(context).focusColor,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => PlayerScreen(
-                        episode: entry.episode.episode,
-                        show: show,
-                      ),
-                    ),
-                  ),
+                  onTap: () => Navigator.of(context)
+                      .push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => PlayerScreen(
+                            episode: entry.episode.episode,
+                            show: show,
+                          ),
+                        ),
+                      )
+                      .then((_) => onReturn()),
                   child: Column(
                     // `min` with a `Flexible` title: the tile takes the height
                     // it needs and the bar sits under the words, while the
@@ -332,9 +384,10 @@ class _ContinueRail extends StatelessWidget {
 /// a browse list is actually scanned for: a score, a year, and what kind of
 /// thing this is.
 class _ShowRow extends StatelessWidget {
-  const _ShowRow({required this.summary, this.first = false});
+  const _ShowRow({required this.summary, required this.onReturn, this.first = false});
 
   final ShowSummary summary;
+  final Future<void> Function() onReturn;
   final bool first;
 
   /// Wide enough to read a title off, short enough that six rows still fit on a
@@ -365,9 +418,11 @@ class _ShowRow extends StatelessWidget {
     return InkWell(
       autofocus: first && Kino.isTv(context),
       focusColor: Theme.of(context).focusColor,
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => ShowScreen(showKey: show.key)),
-      ),
+      // A title page is where watching usually starts, so coming back from one
+      // is the commonest moment for the rail to be stale.
+      onTap: () => Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => ShowScreen(showKey: show.key)))
+          .then((_) => onReturn()),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -441,6 +496,79 @@ class _GenreTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(border: Border.all(color: palette.line)),
       child: Text(name, style: body(11, weight: 600, color: palette.muted)),
+    );
+  }
+}
+
+/// The web app's card, as a widget: a poster, then a line under it with the
+/// title and what there is of it. Bordered and square, like everything else.
+class _ShowTile extends StatelessWidget {
+  const _ShowTile({required this.summary, required this.onReturn, this.first = false});
+
+  final ShowSummary summary;
+  final Future<void> Function() onReturn;
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    final kino = Kino.of(context);
+    final palette = Palette.of(context);
+    final l10n = AppLocalizations.of(context);
+    final show = summary.show;
+
+    final note = show.isFilm
+        ? (summary.playableCount > 0 ? l10n.film : l10n.filmNoStream)
+        : l10n.episodeCount(summary.episodeCount);
+
+    return InkWell(
+      autofocus: first && Kino.isTv(context),
+      focusColor: Theme.of(context).focusColor,
+      // A title page is where watching usually starts, so coming back from one
+      // is the commonest moment for the rail to be stale.
+      onTap: () => Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => ShowScreen(showKey: show.key)))
+          .then((_) => onReturn()),
+      child: DecoratedBox(
+        decoration: BoxDecoration(border: Border.all(color: palette.line, width: 2)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: posterRatio,
+              child: Poster(
+                url: kino.posterUrl(show),
+                seed: show.key,
+                // The frame is the grid cell's; the poster fills it.
+                width: double.infinity,
+                bordered: false,
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        show.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: body(13, weight: 600, color: palette.text),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      note.toUpperCase(),
+                      style: body(10, weight: 700, color: palette.accent),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -305,4 +305,12 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get filterByLanguage => 'Фільтр за мовою';
+
+  @override
+  String resumeAt(String at) {
+    return 'Продовжити · $at';
+  }
+
+  @override
+  String get startAgain => 'Спочатку';
 }

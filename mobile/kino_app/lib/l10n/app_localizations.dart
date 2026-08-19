@@ -571,6 +571,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter by language'**
   String get filterByLanguage;
+
+  /// No description provided for @resumeAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue · {at}'**
+  String resumeAt(String at);
+
+  /// No description provided for @startAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get startAgain;
 }
 
 class _AppLocalizationsDelegate

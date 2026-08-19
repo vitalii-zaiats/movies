@@ -78,5 +78,7 @@
   "voice": "Озвучка",
   "defaultVoice": "Як опубліковано",
   "anyLanguage": "Будь-яка мова",
-  "filterByLanguage": "Фільтр за мовою"
+  "filterByLanguage": "Фільтр за мовою",
+  "resumeAt": "Продовжити · {at}",
+  "startAgain": "Спочатку"
 }

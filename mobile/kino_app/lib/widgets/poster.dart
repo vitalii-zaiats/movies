@@ -16,6 +16,7 @@ class Poster extends StatelessWidget {
     required this.seed,
     this.width = 92,
     this.aspect = posterRatio,
+    this.bordered = true,
     super.key,
   });
 
@@ -23,6 +24,10 @@ class Poster extends StatelessWidget {
   final String seed;
   final double width;
   final double aspect;
+
+  /// Off when whatever holds the poster draws the frame — a card does, and two
+  /// hairlines a pixel apart read as a mistake.
+  final bool bordered;
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +37,12 @@ class Poster extends StatelessWidget {
     return DecoratedBox(
       // No rounded corners anywhere in this system, and a poster is where the
       // exception would be most tempting.
-      decoration: BoxDecoration(border: Border.all(color: palette.line)),
+      decoration: BoxDecoration(
+        border: bordered ? Border.all(color: palette.line) : null,
+      ),
       child: SizedBox(
         width: width,
-        height: width / aspect,
+        height: width.isFinite ? width / aspect : null,
         child: art == null
             ? _Blank(seed: seed)
             : Image.network(

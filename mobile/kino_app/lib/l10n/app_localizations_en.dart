@@ -300,4 +300,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filterByLanguage => 'Filter by language';
+
+  @override
+  String resumeAt(String at) {
+    return 'Continue · $at';
+  }
+
+  @override
+  String get startAgain => 'Start again';
 }
